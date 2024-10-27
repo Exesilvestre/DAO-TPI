@@ -1,7 +1,11 @@
+import sys
+import os
+# Añadir el directorio raíz del proyecto a sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
 import sqlite3
-from patrones.observer import Reserva, Subject
-from models import Autor
+from patrones.observer import Subject
+from models.autor import Autor
 from datetime import datetime
 
 

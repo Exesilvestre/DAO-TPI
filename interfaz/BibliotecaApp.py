@@ -1,7 +1,12 @@
 import tkinter as tk
-
+import sys
+import os
+# Añadir el directorio raíz del proyecto a sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tkinter import messagebox
+from patrones.factory import AutorFactory
 from validaciones import validar_campos_vacios
+
 
 class BibliotecaApp:
     def __init__(self, root):

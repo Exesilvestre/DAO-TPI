@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
-from models import Autor, Libro, Prestamo, Usuario, Reserva, Bajas
-
+from models.autor import Autor
+from models.libro import Libro
+from models.prestamo import Prestamo
+from models.usuario import Usuario
+from models.reserva import Reserva
+from models.bajas import Bajas
 # Clase abstracta Factory
 class Factory(ABC):
     @abstractmethod
@@ -11,7 +15,7 @@ class Factory(ABC):
 # Fábrica concreta para crear instancias de Autor
 class AutorFactory(Factory):
     def factory_method(self, id, nombre, apellido, nacionalidad):
-        return Autor(id, nombre, apellido, nacionalidad)
+        return Autor(nombre, apellido, nacionalidad) 
 
 # Fábrica concreta para crear instancias de Libro
 class LibroFactory(Factory):

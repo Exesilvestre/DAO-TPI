@@ -1,7 +1,13 @@
+import sys
+import os
+# Añadir el directorio raíz del proyecto a sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from datetime import datetime
 from patrones.observer import Observer
 from db_management.db_manager import DatabaseManager
 import sqlite3
+import sys
+sys.path.append("..")
 
 class Reserva(Observer):
     def __init__(self, usuario_id, codigo_isbn, estado="pendiente"):

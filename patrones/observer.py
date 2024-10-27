@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-
 class Subject:
     def __init__(self):
         self._observers = []

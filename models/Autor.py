@@ -1,3 +1,7 @@
+import sys
+import os
+# Añadir el directorio raíz del proyecto a sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
 import sqlite3
 
@@ -6,6 +10,7 @@ class Autor:
         self.nombre = nombre
         self.apellido = apellido
         self.nacionalidad = nacionalidad
+        self.id = None 
 
     def __str__(self):
         return f"Autor: Nombre: {self.nombre} {self.apellido}, Nacionalidad: {self.nacionalidad}"
@@ -28,7 +33,7 @@ class Autor:
                 db_manager.conn.execute('''
                     INSERT INTO autores (nombre, apellido, nacionalidad)
                     VALUES (?, ?, ?);
-                ''', (self.id, self.nombre, self.apellido, self.nacionalidad))
+                ''', (self.nombre, self.apellido, self.nacionalidad))
             print(f"Autor guardado en la base de datos: {self}")
         except sqlite3.Error as e:
             print(f"Error al guardar el autor: {e}")
