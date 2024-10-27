@@ -2,6 +2,8 @@ from db_management.db_manager import DatabaseManager
 import sqlite3
 from patrones.observer import Reserva, Subject
 from models import Autor
+from datetime import datetime
+
 
 class Libro(Subject):
     def __init__(self, codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible):
@@ -17,27 +19,41 @@ class Libro(Subject):
                 f"Año: {self.anio_publicacion}, Autor ID: {self.autor_id}, "
                 f"Cantidad disponible: {self.cantidad_disponible}")
 
-    def guardar(self):
-        db_manager = DatabaseManager()
+def guardar(self):
+    db_manager = DatabaseManager()
 
-        try:
-            # Verificar que el autor con el autor_id existe
-            if not Autor.existe_autor_con_id(self.autor_id):
-                print(f"Error: No se encontró un autor con ID {self.autor_id}")
-                return
+    try:
+        # Verificar que el autor con el autor_id existe
+        if not Autor.existe_autor_con_id(self.autor_id):
+            print(f"Error: No se encontró un autor con ID {self.autor_id}")
+            return
 
-            with db_manager.conn:
-                # Intentar insertar el libro en la base de datos
+        with db_manager.conn:
+            # Verificar si ya existe un libro con el mismo ISBN
+            cursor = db_manager.conn.execute(
+                "SELECT cantidad_disponible FROM libros WHERE codigo_isbn = ?;", (self.codigo_isbn,)
+            )
+            result = cursor.fetchone()
+
+            if result:
+                # Si el libro ya existe, actualizar la cantidad disponible
+                nueva_cantidad = result[0] + self.cantidad_disponible
+                db_manager.conn.execute(
+                    "UPDATE libros SET cantidad_disponible = ? WHERE codigo_isbn = ?;",
+                    (nueva_cantidad, self.codigo_isbn)
+                )
+                print(f"Cantidad del libro con ISBN '{self.codigo_isbn}' actualizada a {nueva_cantidad}.")
+            else:
+                # Si el libro no existe, crear un nuevo registro
                 db_manager.conn.execute('''
                     INSERT INTO libros (codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible)
                     VALUES (?, ?, ?, ?, ?, ?);
                 ''', (self.codigo_isbn, self.titulo, self.genero, self.anio_publicacion, self.autor_id, self.cantidad_disponible))
-                
-                print(f"Libro guardado en la base de datos: {self}")
-        except sqlite3.IntegrityError:
-            print(f"Error: ISBN '{self.codigo_isbn}' ya está registrado (clave primaria duplicada).")
-        except sqlite3.Error as e:
-            print(f"Error al guardar el libro: {e}")
+                print(f"Nuevo libro guardado en la base de datos: {self}")
+    except sqlite3.IntegrityError:
+        print(f"Error: ISBN '{self.codigo_isbn}' ya está registrado (clave primaria duplicada).")
+    except sqlite3.Error as e:
+        print(f"Error al guardar el libro: {e}")
     
     @classmethod
     def existe_libro_con_isbn(cls, codigo_isbn):
@@ -89,3 +105,31 @@ class Libro(Subject):
             print(f"El libro con ISBN {self.codigo_isbn} está disponible. Notificando a los usuarios en la lista de reservas...")
             self.notify()
             self._observers = []
+
+    def dar_de_baja(self, motivo, usuario_id=None):
+        # Dar de baja el libro y registrar en el historial de bajas si está disponible
+        # Consultar la disponibilidad antes de proceder con la baja
+        cantidad_disponible = self.consultar_disponibilidad(self.codigo_isbn)
+        
+        if cantidad_disponible > 0:
+            db_manager = DatabaseManager()
+            fecha_baja = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            try:
+                with db_manager.conn:
+                    # Registrar la baja en la tabla de bajas_libros
+                    db_manager.conn.execute('''
+                        INSERT INTO bajas_libros (libro_isbn, motivo, fecha_baja, usuario_id)
+                        VALUES (?, ?, ?, ?);
+                    ''', (self.codigo_isbn, motivo, fecha_baja, usuario_id))
+
+                    # Reducir la cantidad disponible del libro
+                    nueva_cantidad = cantidad_disponible - 1
+                    db_manager.conn.execute('''
+                        UPDATE libros SET cantidad_disponible = ? WHERE codigo_isbn = ?;
+                    ''', (nueva_cantidad, self.codigo_isbn))
+                    print(f"Libro con ISBN {self.codigo_isbn} dado de baja como {motivo}. Cantidad disponible actualizada a {nueva_cantidad}.")
+            except sqlite3.Error as e:
+                print(f"Error al dar de baja el libro: {e}")
+        else:
+            print(f"No hay ejemplares disponibles para dar de baja el libro con ISBN {self.codigo_isbn}.")

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from models import Autor, Libro, Prestamo, Usuario
+from models import Autor, Libro, Prestamo, Usuario, Reserva, Bajas
 
 # Clase abstracta Factory
 class Factory(ABC):
@@ -29,3 +29,13 @@ class PrestamoFactory(Factory):
 class UsuarioFactory(Factory):
     def factory_method(self, id, nombre, apellido, tipo, direccion, telefono):
         return Usuario(id, nombre, apellido, tipo, direccion, telefono)
+
+# Fábrica concreta para crear instancias de Reserva
+class ReservaFactory(Factory):
+    def factory_method(self, usuario_id, codigo_isbn, estado="pendiente"):
+        return Reserva(usuario_id, codigo_isbn, estado)
+
+        # Fábrica concreta para crear instancias de Bajas
+class BajasFactory(Factory):
+    def factory_method(self, libro_isbn, motivo, usuario_id=None):
+        return Bajas(libro_isbn, motivo, usuario_id)

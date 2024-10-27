@@ -82,7 +82,7 @@ class Prestamo:
                     UPDATE prestamos
                     SET fecha_devolucion = ?
                     WHERE id = ?;
-                ''', (fecha_devolucion, prestamo_id))
+                ''', (fecha_devolucion, prestamo_id)    )
 
                 # Incrementar la cantidad disponible del libro
                 db_manager.conn.execute('''

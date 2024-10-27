@@ -85,65 +85,92 @@ class DatabaseManager:
             ''')
             print("Tabla reservas creada o ya existente.")
 
+            # Crear tabla de bajas de libros
+            self.conn.execute('''
+                CREATE TABLE IF NOT EXISTS bajas_libros (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    libro_isbn TEXT NOT NULL,
+                    motivo TEXT CHECK(motivo IN ('dañado', 'perdido')) NOT NULL,
+                    fecha_baja TEXT NOT NULL,
+                    usuario_id INTEGER,
+                    FOREIGN KEY (libro_isbn) REFERENCES libros(codigo_isbn),
+                    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+                )
+            ''')
+            print("Tabla bajas creada o ya existente.")
+
+    def _tabla_tiene_datos(self, tabla):
+        cursor = self.conn.execute(f'SELECT COUNT(*) FROM {tabla}')
+        return cursor.fetchone()[0] > 0
+
     def agregar_registros_autores(self):
-        autores = [
-            ("Gabriel", "García Márquez", "Colombiana"),
-            ("Julio", "Cortázar", "Argentina"),
-            ("Isabel", "Allende", "Chilena"),
-            ("Mario", "Vargas Llosa", "Peruana"),
-            ("Jorge", "Luis Borges", "Argentina"),
-            ("Pablo", "Neruda", "Chilena"),
-            ("Octavio", "Paz", "Mexicana"),
-            ("Laura", "Esquivel", "Mexicana"),
-            ("Carlos", "Fuentes", "Mexicana"),
-            ("Miguel", "de Cervantes", "Española")
-        ]
-        with self.conn:
-            self.conn.executemany('''
-                INSERT INTO autores (nombre, apellido, nacionalidad)
-                VALUES (?, ?, ?)
-            ''', autores)
-        print("Registros de autores agregados.")
+        if not self._tabla_tiene_datos('autores'):
+            autores = [
+                ("Gabriel", "García Márquez", "Colombiana"),
+                ("Julio", "Cortázar", "Argentina"),
+                ("Isabel", "Allende", "Chilena"),
+                ("Mario", "Vargas Llosa", "Peruana"),
+                ("Jorge", "Luis Borges", "Argentina"),
+                ("Pablo", "Neruda", "Chilena"),
+                ("Octavio", "Paz", "Mexicana"),
+                ("Laura", "Esquivel", "Mexicana"),
+                ("Carlos", "Fuentes", "Mexicana"),
+                ("Miguel", "de Cervantes", "Española")
+            ]
+            with self.conn:
+                self.conn.executemany('''
+                    INSERT INTO autores (nombre, apellido, nacionalidad)
+                    VALUES (?, ?, ?)
+                ''', autores)
+            print("Registros de autores agregados.")
+        else:
+            print("La tabla de autores ya tiene registros.")
 
     def agregar_registros_libros(self):
-        libros = [
-            ("978-1-2345-6780-1", "Cien Años de Soledad", "Novela", 1967, 1, 5),
-            ("978-1-2345-6780-2", "Rayuela", "Novela", 1963, 2, 4),
-            ("978-1-2345-6780-3", "La Casa de los Espíritus", "Novela", 1982, 3, 6),
-            ("978-1-2345-6780-4", "La Ciudad y los Perros", "Novela", 1963, 4, 5),
-            ("978-1-2345-6780-5", "Ficciones", "Cuentos", 1944, 5, 3),
-            ("978-1-2345-6780-6", "Canto General", "Poesía", 1950, 6, 7),
-            ("978-1-2345-6780-7", "El Laberinto de la Soledad", "Ensayo", 1950, 7, 2),
-            ("978-1-2345-6780-8", "Como Agua para Chocolate", "Novela", 1989, 8, 4),
-            ("978-1-2345-6780-9", "La Muerte de Artemio Cruz", "Novela", 1962, 9, 5),
-            ("978-1-2345-6781-0", "Don Quijote de la Mancha", "Novela", 1605, 10, 8)
-        ]
-        with self.conn:
-            self.conn.executemany('''
-                INSERT INTO libros (codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', libros)
-        print("Registros de libros agregados.")
+        if not self._tabla_tiene_datos('libros'):
+            libros = [
+                ("978-1-2345-6780-1", "Cien Años de Soledad", "Novela", 1967, 1, 5),
+                ("978-1-2345-6780-2", "Rayuela", "Novela", 1963, 2, 4),
+                ("978-1-2345-6780-3", "La Casa de los Espíritus", "Novela", 1982, 3, 6),
+                ("978-1-2345-6780-4", "La Ciudad y los Perros", "Novela", 1963, 4, 5),
+                ("978-1-2345-6780-5", "Ficciones", "Cuentos", 1944, 5, 3),
+                ("978-1-2345-6780-6", "Canto General", "Poesía", 1950, 6, 7),
+                ("978-1-2345-6780-7", "El Laberinto de la Soledad", "Ensayo", 1950, 7, 2),
+                ("978-1-2345-6780-8", "Como Agua para Chocolate", "Novela", 1989, 8, 4),
+                ("978-1-2345-6780-9", "La Muerte de Artemio Cruz", "Novela", 1962, 9, 5),
+                ("978-1-2345-6781-0", "Don Quijote de la Mancha", "Novela", 1605, 10, 8)
+            ]
+            with self.conn:
+                self.conn.executemany('''
+                    INSERT INTO libros (codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', libros)
+            print("Registros de libros agregados.")
+        else:
+            print("La tabla de libros ya tiene registros.")
 
     def agregar_registros_usuarios(self):
-        usuarios = [
-            ("Juan", "Pérez", "estudiante", "Av. Siempre Viva 123", "1234567890"),
-            ("María", "González", "profesor", "Calle Falsa 456", "2345678901"),
-            ("Carlos", "López", "estudiante", "Av. Las Flores 789", "3456789012"),
-            ("Ana", "Ramírez", "profesor", "Calle Principal 321", "4567890123"),
-            ("Luis", "Martínez", "estudiante", "Av. San Martín 111", "5678901234"),
-            ("Laura", "García", "profesor", "Calle Central 222", "6789012345"),
-            ("Pedro", "Fernández", "estudiante", "Av. Libertad 333", "7890123456"),
-            ("Sofía", "Rodríguez", "profesor", "Calle Secundaria 444", "8901234567"),
-            ("José", "Hernández", "estudiante", "Av. Los Álamos 555", "9012345678"),
-            ("Elena", "Díaz", "profesor", "Calle Tercera 666", "0123456789")
-        ]
-        with self.conn:
-            self.conn.executemany('''
-                INSERT INTO usuarios (nombre, apellido, tipo_usuario, direccion, telefono)
-                VALUES (?, ?, ?, ?, ?)
-            ''', usuarios)
-        print("Registros de usuarios agregados.")
+        if not self._tabla_tiene_datos('usuarios'):
+            usuarios = [
+                ("Juan", "Pérez", "estudiante", "Av. Siempre Viva 123", "1234567890"),
+                ("María", "González", "profesor", "Calle Falsa 456", "2345678901"),
+                ("Carlos", "López", "estudiante", "Av. Las Flores 789", "3456789012"),
+                ("Ana", "Ramírez", "profesor", "Calle Principal 321", "4567890123"),
+                ("Luis", "Martínez", "estudiante", "Av. San Martín 111", "5678901234"),
+                ("Laura", "García", "profesor", "Calle Central 222", "6789012345"),
+                ("Pedro", "Fernández", "estudiante", "Av. Libertad 333", "7890123456"),
+                ("Sofía", "Rodríguez", "profesor", "Calle Secundaria 444", "8901234567"),
+                ("José", "Hernández", "estudiante", "Av. Los Álamos 555", "9012345678"),
+                ("Elena", "Díaz", "profesor", "Calle Tercera 666", "0123456789")
+            ]
+            with self.conn:
+                self.conn.executemany('''
+                    INSERT INTO usuarios (nombre, apellido, tipo_usuario, direccion, telefono)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', usuarios)
+            print("Registros de usuarios agregados.")
+        else:
+            print("La tabla de usuarios ya tiene registros.")
 
     def cerrar_conexion(self):
         if self.conn:
