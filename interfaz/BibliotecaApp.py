@@ -4,7 +4,7 @@ import os
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tkinter import messagebox
-from patrones.factory import AutorFactory
+from patrones.factory import AutorFactory, LibroFactory
 from validaciones import validar_campos_vacios
 
 
@@ -25,7 +25,7 @@ class BibliotecaApp:
         # Definir los botones con las funcionalidades y propiedades de estilo
         botones = [
             ("Registro de Autores", self.mostrar_registro_autores),
-            ("Registro de Libros", self.registro_libros),
+            ("Registro de Libros", self.mostrar_registro_libros),
             ("Registro de Usuarios", self.registro_usuarios),
             ("Préstamo de Libros", self.prestamo_libros),
             ("Devolución de Libros", self.devolucion_libros),
@@ -64,6 +64,32 @@ class BibliotecaApp:
         registrar_boton.pack(side="left", padx=10, pady=10)
 
         cerrar_boton = tk.Button(self.frame_registro_autores, text="Cerrar", width=10, height=2, bg="maroon", fg="white", command=self.root.quit)
+        cerrar_boton.pack(side="left", padx=10, pady=10)
+
+    def mostrar_registro_libros(self):
+        """Muestra la interfaz de registro de libros y oculta los elementos anteriores."""
+        self.frame_inicial.pack_forget()  # Ocultar el frame inicial
+        self.cerrar_boton.pack_forget()   # Ocultar el botón de cerrar
+
+        # Frame de registro de libros
+        self.frame_registro_libros = tk.Frame(self.root)
+        self.frame_registro_libros.pack()
+
+        # Campos de texto para el registro de libros
+        self.isbn_entry = self.crear_campo(self.frame_registro_libros, "Código ISBN")
+        self.titulo_entry = self.crear_campo(self.frame_registro_libros, "Título")
+        self.genero_entry = self.crear_campo(self.frame_registro_libros, "Género")
+        self.anio_publicacion_entry = self.crear_campo(self.frame_registro_libros, "Año de Publicación")
+        self.autor_id_entry = self.crear_campo(self.frame_registro_libros, "ID del Autor")
+
+        # Botones de volver, registrar y cerrar dentro del frame de registro de libros
+        volver_boton = tk.Button(self.frame_registro_libros, text="Volver", width=10, height=2, command=self.volver_inicio)
+        volver_boton.pack(side="left", padx=10, pady=10)
+
+        registrar_boton = tk.Button(self.frame_registro_libros, text="Registrar", width=10, height=2, command=self.registrar_libro)
+        registrar_boton.pack(side="left", padx=10, pady=10)
+
+        cerrar_boton = tk.Button(self.frame_registro_libros, text="Cerrar", width=10, height=2, bg="maroon", fg="white", command=self.root.quit)
         cerrar_boton.pack(side="left", padx=10, pady=10)
 
 
@@ -112,7 +138,36 @@ class BibliotecaApp:
 
     # Funciones de otras funcionalidades
     def registro_libros(self):
-        messagebox.showinfo("Funcionalidad", "Registro de Libros: Permitir el registro de nuevos libros y asignarlos a un autor.")
+        """Registra un nuevo libro en el sistema verificando los campos."""
+        # Asegúrate de que los campos están definidos
+        if not hasattr(self, 'isbn_entry'):
+            messagebox.showerror("Error", "Los campos de registro de libros no están inicializados.")
+            return
+
+        codigo_isbn = self.isbn_entry.get()
+        titulo = self.titulo_entry.get()
+        genero = self.genero_entry.get()
+        anio_publicacion = self.anio_publicacion_entry.get()
+        autor_id = self.autor_id_entry.get()
+
+        # Validación de campos vacíos
+        if not validar_campos_vacios(codigo_isbn, titulo, genero, anio_publicacion, autor_id):
+            messagebox.showerror("Error", "Todos los campos son obligatorios.")
+            return
+
+        try:
+            # Crear una instancia de Libro y guardar en la base de datos
+            libro = LibroFactory(codigo_isbn, titulo, genero, anio_publicacion, autor_id)
+            libro.guardar()  # Asegúrate de que este método exista en tu clase Libro
+
+            messagebox.showinfo("Registro", "Libro registrado correctamente.")
+            self.isbn_entry.delete(0, tk.END)
+            self.titulo_entry.delete(0, tk.END)
+            self.genero_entry.delete(0, tk.END)
+            self.anio_publicacion_entry.delete(0, tk.END)
+            self.autor_id_entry.delete(0, tk.END)
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo registrar el libro: {e}")
 
     def registro_usuarios(self):
         messagebox.showinfo("Funcionalidad", "Registro de Usuarios: Permitir el registro de nuevos usuarios.")
