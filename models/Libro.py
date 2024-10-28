@@ -68,7 +68,9 @@ class Libro(Subject):
                 cursor = db_manager.conn.execute(
                     "SELECT codigo_isbn FROM libros WHERE codigo_isbn = ?;", (codigo_isbn,)
                 )
-                return cursor.fetchone() is not None
+                result = cursor.fetchone()
+                print(f"Consulta ISBN '{codigo_isbn}', Resultado:", result)
+                return result is not None
         except sqlite3.Error as e:
             print(f"Error al verificar el libro: {e}")
             return False
@@ -124,7 +126,7 @@ class Libro(Subject):
                 with db_manager.conn:
                     # Registrar la baja en la tabla de bajas_libros
                     db_manager.conn.execute('''
-                        INSERT INTO bajas_libros (libro_isbn, motivo, fecha_baja, usuario_id)
+                        INSERT INTO bajas_libros (codigo_isbn, motivo, fecha_baja, usuario_id)
                         VALUES (?, ?, ?, ?);
                     ''', (self.codigo_isbn, motivo, fecha_baja, usuario_id))
 

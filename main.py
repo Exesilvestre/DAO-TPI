@@ -6,7 +6,9 @@ def main():
     db_manager = DatabaseManager()
 
     crear_interfaz()
+
     db_manager.cerrar_conexion()
+
 
 if __name__ == "__main__":
     main()

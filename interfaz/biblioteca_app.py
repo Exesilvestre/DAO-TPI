@@ -471,9 +471,10 @@ class BibliotecaApp:
         self.tabla_prestamos.heading("ID", text="ID")
         self.tabla_prestamos.heading("Usuario", text="Nombre Persona")
         self.tabla_prestamos.heading("Libro", text="Nombre Libro")
-        self.tabla_prestamos.column("ID", width=100)
-        self.tabla_prestamos.column("Usuario", width=200)
-        self.tabla_prestamos.column("Libro", width=200)
+        self.tabla_prestamos.column("ID", width=100, anchor="center")
+        self.tabla_prestamos.column("Usuario", width=200, anchor="center")
+        self.tabla_prestamos.column("Libro", width=200, anchor="center")
+        self.tabla_prestamos.place(x=450, y=200)
         self.tabla_prestamos.place(x=450, y=200)
 
         # Rellenar la tabla con los préstamos activos
@@ -786,10 +787,63 @@ class BibliotecaApp:
         )
         cerrar_boton.place(x=950, y=600)
 
-    # Métodos de cada reporte (Implementación de muestra para estructurar cada reporte)
+    def mostrar_area_reporte(self):
+        """Crea o limpia el área de visualización del reporte sin afectar los botones de navegación."""
+        if hasattr(self, 'frame_reporte'):
+            # Si ya existe el frame, lo limpia
+            for widget in self.frame_reporte.winfo_children():
+                widget.destroy()
+        else:
+            # Crea el frame si no existe, en una posición fija dentro de frame_reportes
+            self.frame_reporte = tk.Frame(self.frame_reportes, width=2000, height=400, bg="#f0f0f0")
+            self.frame_reporte.place(x=400, y=150)  # Ubicación personalizada para el área de reportes con coordenadas x, y
+
     def generar_reporte_prestamos_vencidos(self):
-        # Lógica para obtener y mostrar el reporte de préstamos vencidos
-        messagebox.showinfo("Reporte", "Generando reporte de préstamos vencidos.")
+        """Genera y muestra el reporte de préstamos vencidos en el área de reportes."""
+        # Muestra o limpia el área del reporte
+        self.mostrar_area_reporte()
+
+        # Obtener la lista de préstamos vencidos
+        prestamos_vencidos = Prestamo.obtener_prestamos_vencidos()  # Método de consulta en la clase Prestamo
+
+        if not prestamos_vencidos:
+            tk.Label(self.frame_reporte, text="No hay préstamos vencidos.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
+            return
+
+        # Título del reporte
+        titulo_label = tk.Label(
+            self.frame_reporte, 
+            text="Reporte de Préstamos Vencidos", 
+            font=("Trebuchet MS", 16, "bold"),
+            bg="#f0f0f0"
+        )
+        titulo_label.place(x=350, y=10)
+
+        # Crear un Treeview para mostrar los datos en formato tabular
+        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("ID", "Usuario", "Libro", "Fecha Préstamo", "Fecha Vencimiento"), show="headings")
+        tabla_reporte.heading("ID", text="ID Préstamo")
+        tabla_reporte.heading("Usuario", text="Usuario")
+        tabla_reporte.heading("Libro", text="Libro")
+        tabla_reporte.heading("Fecha Préstamo", text="Fecha Préstamo")
+        tabla_reporte.heading("Fecha Vencimiento", text="Fecha Vencimiento")
+
+        # Centrando las columnas y ajustando el ancho
+        for col in ("ID", "Usuario", "Libro", "Fecha Préstamo", "Fecha Vencimiento"):
+            tabla_reporte.column(col, width=150, anchor="center")
+
+        # Posicionar la tabla en coordenadas específicas dentro del área de reporte
+        tabla_reporte.place(x=120, y=50, width=750, height=300)
+
+        # Agregar scroll vertical al Treeview
+        scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
+        tabla_reporte.configure(yscrollcommand=scroll_y.set)
+        scroll_y.place(x=870, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
+
+
+        # Insertar datos en la tabla (ajuste para acceder por índice)
+        for prestamo in prestamos_vencidos:
+            tabla_reporte.insert("", tk.END, values=(prestamo[0], prestamo[1], prestamo[2], prestamo[3], prestamo[4]))
+
 
     def generar_reporte_libros_mas_prestados(self):
         # Lógica para obtener y mostrar el reporte de libros más prestados en el último mes
@@ -909,7 +963,7 @@ class BibliotecaApp:
         # Extraer IDs de usuario y libro seleccionados
         usuario_id = int(usuario_seleccionado.split(" - ")[0])
         # Extraer los caracteres del 1 al 13 para obtener el ISBN
-        codigo_isbn = libro_seleccionado[1:13]
+        codigo_isbn = libro_seleccionado[1:18]
 
         # Crear una instancia de Préstamo usando PrestamoFactory y guardar en la base de datos
         prestamo_factory = PrestamoFactory()

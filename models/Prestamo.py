@@ -174,3 +174,25 @@ class Prestamo:
         except sqlite3.Error as e:
             print(f"Error al finalizar el préstamo: {e}")
             raise e
+
+    @classmethod
+    def obtener_prestamos_vencidos(cls):
+        """Obtiene una lista de préstamos que están vencidos según la fecha de devolución."""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                # Consulta para obtener los préstamos vencidos
+                cursor = db_manager.conn.execute('''
+                    SELECT prestamos.id, usuarios.nombre || ' ' || usuarios.apellido AS usuario, libros.titulo, prestamos.fecha_prestamo, prestamos.fecha_devolucion
+                    FROM prestamos
+                    JOIN usuarios ON prestamos.usuario_id = usuarios.id
+                    JOIN libros ON prestamos.libro_isbn = libros.codigo_isbn
+                    WHERE prestamos.estado = 'Activo' AND prestamos.fecha_devolucion < DATE('now');
+                ''')
+                prestamos_vencidos = cursor.fetchall()
+
+            print("Préstamos vencidos obtenidos correctamente.")
+            return prestamos_vencidos
+        except sqlite3.Error as e:
+            print(f"Error al obtener préstamos vencidos: {e}")
+            raise e
