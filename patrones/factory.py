@@ -14,25 +14,25 @@ class Factory(ABC):
 
 # Fábrica concreta para crear instancias de Autor
 class AutorFactory(Factory):
-    def factory_method(self, id, nombre, apellido, nacionalidad):
-        return Autor(nombre, apellido, nacionalidad) 
+    def factory_method(self, nombre, apellido, nacionalidad, id=None):
+        return Autor(nombre, apellido, nacionalidad, id)
 
 # Fábrica concreta para crear instancias de Libro
 class LibroFactory(Factory):
-    def factory_method(self, codigo_isbn, titulo, genero, anio, autor, cantidad_disponible):
-        return Libro(codigo_isbn, titulo, genero, anio, autor, cantidad_disponible)
+    def factory_method(self, codigo_isbn, titulo, genero, anio, autor_id, cantidad_disponible = None):
+        return Libro(codigo_isbn, titulo, genero, anio, autor_id, cantidad_disponible)
 
 
 # Fábrica concreta para crear instancias de Prestamo
 class PrestamoFactory(Factory):
-    def factory_method(self, id, usuario, libro, fecha_prestamo, fecha_devolucion=None):
-        return Prestamo(id, usuario, libro, fecha_prestamo, fecha_devolucion)
+    def factory_method(self, usuario, libro, fecha_devolucion=None, id=None):
+        return Prestamo(usuario, libro, fecha_devolucion, id)
 
 
 # Fábrica concreta para crear instancias de Usuario
 class UsuarioFactory(Factory):
-    def factory_method(self, id, nombre, apellido, tipo, direccion, telefono):
-        return Usuario(id, nombre, apellido, tipo, direccion, telefono)
+    def factory_method(self, nombre, apellido, tipo, direccion, telefono, id=None):
+        return Usuario(nombre, apellido, tipo, direccion, telefono, id)
 
 # Fábrica concreta para crear instancias de Reserva
 class ReservaFactory(Factory):

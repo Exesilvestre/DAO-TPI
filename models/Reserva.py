@@ -13,7 +13,7 @@ class Reserva(Observer):
     def __init__(self, usuario_id, codigo_isbn, estado="pendiente"):
         self.usuario_id = usuario_id
         self.codigo_isbn = codigo_isbn
-        self.fecha_reserva = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.fecha_reserva = datetime.now().strftime("%Y-%m-%d")
         self.estado = estado
 
     def __str__(self):

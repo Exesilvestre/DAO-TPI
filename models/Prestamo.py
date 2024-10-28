@@ -9,11 +9,12 @@ from datetime import datetime, timedelta
 import sqlite3
 
 class Prestamo:
-    def __init__(self, usuario_id, codigo_isbn, fecha_prestamo=None, fecha_devolucion_estimada=None):
+    def __init__(self, usuario_id, codigo_isbn, fecha_devolucion_estimada, id=None):
         self.usuario_id = usuario_id
         self.codigo_isbn = codigo_isbn
-        self.fecha_prestamo = fecha_prestamo or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.fecha_devolucion_estimada = fecha_devolucion_estimada or (self.fecha_prestamo + timedelta(days=14))
+        self.fecha_prestamo = datetime.now().strftime("%Y-%m-%d")
+        self.fecha_devolucion_estimada = fecha_devolucion_estimada
+        self.id = id
 
     def __str__(self):
         return (f"Préstamo: Usuario ID: {self.usuario_id}, ISBN Libro: {self.codigo_isbn}, "
@@ -44,7 +45,7 @@ class Prestamo:
             # Registrar el préstamo y actualizar la disponibilidad del libro
             with db_manager.conn:
                 db_manager.conn.execute('''
-                    INSERT INTO prestamos (usuario_id, libro_isbn, fecha_prestamo, fecha_devolucion_estimada)
+                    INSERT INTO prestamos (usuario_id, libro_isbn, fecha_prestamo, fecha_devolucion)
                     VALUES (?, ?, ?, ?);
                 ''', (self.usuario_id, self.codigo_isbn, self.fecha_prestamo, self.fecha_devolucion_estimada))
 
@@ -64,13 +65,13 @@ class Prestamo:
             with db_manager.conn:
                 # Verificar si el préstamo existe y está pendiente de devolución
                 cursor = db_manager.conn.execute('''
-                    SELECT id, fecha_devolucion_estimada FROM prestamos
-                    WHERE usuario_id = ? AND libro_isbn = ? AND fecha_devolucion IS NULL;
+                    SELECT id, fecha_devolucion FROM prestamos
+                    WHERE usuario_id = ? AND libro_isbn = ?;
                 ''', (usuario_id, codigo_isbn))
                 prestamo = cursor.fetchone()
                 
                 if not prestamo:
-                    print(f"No se encontró un préstamo activo para el usuario {usuario_id} y libro {codigo_isbn}.")
+                    print(f"No se encontró un préstamo para el usuario {usuario_id} y libro {codigo_isbn}.")
                     return
 
                 prestamo_id, fecha_devolucion_estimada = prestamo
@@ -81,7 +82,7 @@ class Prestamo:
                     return
 
                 # Actualizar la fecha de devolución
-                fecha_devolucion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                fecha_devolucion = datetime.now().strftime("%Y-%m-%d")
                 db_manager.conn.execute('''
                     UPDATE prestamos
                     SET fecha_devolucion = ?
@@ -96,8 +97,8 @@ class Prestamo:
                 ''', (codigo_isbn,))
 
                 # Calcular multa si hay retraso
-                fecha_devolucion_dt = datetime.strptime(fecha_devolucion, "%Y-%m-%d %H:%M:%S")
-                fecha_devolucion_estimada_dt = datetime.strptime(fecha_devolucion_estimada, "%Y-%m-%d %H:%M:%S")
+                fecha_devolucion_dt = datetime.strptime(fecha_devolucion, "%Y-%m-%d")
+                fecha_devolucion_estimada_dt = datetime.strptime(fecha_devolucion_estimada, "%Y-%m-%d")
                 dias_retraso = (fecha_devolucion_dt - fecha_devolucion_estimada_dt).days
 
                 if dias_retraso > 0:
@@ -115,8 +116,8 @@ class Prestamo:
     def calcular_multa(self, fecha_devolucion, fecha_devolucion_estimada):
         """Calcula la multa en función de los días de retraso."""
         # Convertir las fechas a objetos datetime
-        fecha_devolucion_dt = datetime.strptime(fecha_devolucion, "%Y-%m-%d %H:%M:%S")
-        fecha_devolucion_estimada_dt = datetime.strptime(fecha_devolucion_estimada, "%Y-%m-%d %H:%M:%S")
+        fecha_devolucion_dt = datetime.strptime(fecha_devolucion, "%Y-%m-%d")
+        fecha_devolucion_estimada_dt = datetime.strptime(fecha_devolucion_estimada, "%Y-%m-%d")
 
         # Calcular los días de retraso
         dias_retraso = (fecha_devolucion_dt - fecha_devolucion_estimada_dt).days
@@ -125,3 +126,51 @@ class Prestamo:
             return multa
         else:
             return 0
+        
+    @classmethod
+    def listar_prestamos_activos(cls):
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                cursor = db_manager.conn.execute('''
+                    SELECT p.id, u.nombre || ' ' || u.apellido AS usuario_nombre, l.titulo AS libro_titulo
+                    FROM prestamos p
+                    JOIN usuarios u ON p.usuario_id = u.id
+                    JOIN libros l ON p.libro_isbn = l.codigo_isbn
+                    WHERE p.estado = 'Activo';
+                ''')
+                return cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"Error al listar los préstamos activos: {e}")
+            return []
+        
+    @classmethod
+    def finalizar_prestamo(cls, prestamo_id):
+        """Marca un préstamo como 'Finalizado' y actualiza la disponibilidad del libro."""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                # Cambiar estado a 'Finalizado'
+                db_manager.conn.execute('''
+                    UPDATE prestamos
+                    SET estado = 'Finalizado'
+                    WHERE id = ?;
+                ''', (prestamo_id,))
+
+                # Recuperar el código ISBN del libro y actualizar disponibilidad
+                cursor = db_manager.conn.execute('''
+                    SELECT libro_isbn FROM prestamos WHERE id = ?;
+                ''', (prestamo_id,))
+                libro_isbn = cursor.fetchone()[0]
+
+                # Incrementar la cantidad disponible del libro
+                db_manager.conn.execute('''
+                    UPDATE libros
+                    SET cantidad_disponible = cantidad_disponible + 1
+                    WHERE codigo_isbn = ?;
+                ''', (libro_isbn,))
+
+            print(f"Préstamo con ID {prestamo_id} finalizado y disponibilidad de libro actualizada.")
+        except sqlite3.Error as e:
+            print(f"Error al finalizar el préstamo: {e}")
+            raise e

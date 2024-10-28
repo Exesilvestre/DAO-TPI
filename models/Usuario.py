@@ -9,7 +9,7 @@ from db_management.db_manager import DatabaseManager
 class Usuario():
     TIPOS_VALIDOS = ['estudiante', 'profesor']
     
-    def __init__(self, nombre, apellido, tipo, direccion, telefono):
+    def __init__(self, nombre, apellido, tipo, direccion, telefono, id=None):
         if tipo not in self.TIPOS_VALIDOS:
             raise ValueError(f"Tipo de usuario inválido: {tipo}. Debe ser 'estudiante' o 'profesor'.")
         self.nombre = nombre
@@ -18,6 +18,8 @@ class Usuario():
         self.direccion = direccion
         self.telefono = telefono
         self.libros_prestados = []
+        self.id = id
+
 
     def __str__(self):
         return (f"Usuario: Nombre: {self.nombre} {self.apellido}, Tipo: {self.tipo}, "
@@ -52,7 +54,7 @@ class Usuario():
         try:
             with db_manager.conn:
                 db_manager.conn.execute('''
-                    INSERT INTO usuarios (nombre, apellido, tipo, direccion, telefono)
+                    INSERT INTO usuarios (nombre, apellido, tipo_usuario, direccion, telefono)
                     VALUES (?, ?, ?, ?, ?);
                 ''', (self.nombre, self.apellido, self.tipo, self.direccion, self.telefono))
             print(f"Usuario guardado en la base de datos: {self}")
@@ -91,3 +93,15 @@ class Usuario():
         except sqlite3.Error as e:
             print(f"Error al verificar el límite de préstamos: {e}")
             return False
+    
+    @classmethod
+    def listar_usuarios(self):
+        """Obtiene una lista de usuarios desde la base de datos."""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                cursor = db_manager.conn.execute("SELECT id, nombre, apellido FROM usuarios;")
+                return cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"Error al listar usuarios: {e}")
+            return []

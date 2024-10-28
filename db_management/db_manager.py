@@ -57,7 +57,7 @@ class DatabaseManager:
             print("Tabla usuarios creada o ya existente.")
             self.agregar_registros_usuarios()
 
-            # Crear tabla de préstamos
+            # Crear tabla de préstamos con estado
             self.conn.execute('''
                 CREATE TABLE IF NOT EXISTS prestamos (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,6 +65,7 @@ class DatabaseManager:
                     libro_isbn TEXT NOT NULL,
                     fecha_prestamo TEXT NOT NULL,
                     fecha_devolucion TEXT,
+                    estado TEXT CHECK(estado IN ('Activo', 'Finalizado')) DEFAULT 'Activo',
                     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
                     FOREIGN KEY (libro_isbn) REFERENCES libros(codigo_isbn)
                 )

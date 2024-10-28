@@ -6,11 +6,11 @@ from db_management.db_manager import DatabaseManager
 import sqlite3
 
 class Autor:
-    def __init__(self, nombre, apellido, nacionalidad):
+    def __init__(self, nombre, apellido, nacionalidad, id=None):
         self.nombre = nombre
         self.apellido = apellido
         self.nacionalidad = nacionalidad
-        self.id = None 
+        self.id = id
 
     def __str__(self):
         return f"Autor: Nombre: {self.nombre} {self.apellido}, Nacionalidad: {self.nacionalidad}"
@@ -27,7 +27,6 @@ class Autor:
 
     def guardar(self):
         db_manager = DatabaseManager()
-
         try:
             with db_manager.conn:
                 db_manager.conn.execute('''
@@ -50,3 +49,11 @@ class Autor:
         except sqlite3.Error as e:
             print(f"Error al verificar la existencia del autor: {e}")
             return False
+        
+    @classmethod
+    def listar_autores(cls):
+        """Devuelve una lista de tuplas con (id, 'nombre apellido') de todos los autores en la base de datos."""
+        db_manager = DatabaseManager()
+        with db_manager.conn:
+            cursor = db_manager.conn.execute("SELECT id, nombre, apellido FROM autores")
+            return [(row[0], f"{row[1]} {row[2]}") for row in cursor.fetchall()]

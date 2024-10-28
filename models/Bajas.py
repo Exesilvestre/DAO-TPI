@@ -10,7 +10,7 @@ class Bajas:
     def __init__(self, libro_isbn, motivo, usuario_id=None):
         self.libro_isbn = libro_isbn
         self.motivo = motivo  # Debe ser "dañado" o "perdido"
-        self.fecha_baja = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.fecha_baja = datetime.now().strftime("%Y-%m-%d")
         self.usuario_id = usuario_id
 
     def __str__(self):
