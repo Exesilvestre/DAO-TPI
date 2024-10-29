@@ -846,20 +846,216 @@ class BibliotecaApp:
 
 
     def generar_reporte_libros_mas_prestados(self):
-        # Lógica para obtener y mostrar el reporte de libros más prestados en el último mes
-        messagebox.showinfo("Reporte", "Generando reporte de libros más prestados.")
+        """Genera y muestra el reporte de libros más prestados en el área de reportes."""
+        # Muestra o limpia el área del reporte
+        self.mostrar_area_reporte()
 
+        # Obtener la lista de libros más prestados del último mes
+        libros_mas_prestados = Prestamo.obtener_libros_mas_prestados()  # Método de consulta en la clase Prestamo
+
+        if not libros_mas_prestados:
+            tk.Label(self.frame_reporte, text="No hay préstamos en el último mes.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
+            return
+
+        # Título del reporte
+        titulo_label = tk.Label(
+            self.frame_reporte, 
+            text="Reporte de Libros Más Prestados en el Último Mes", 
+            font=("Trebuchet MS", 16, "bold"),
+            bg="#f0f0f0"
+        )
+        titulo_label.place(x=300, y=10)
+
+        # Crear un Treeview para mostrar los datos en formato tabular
+        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("ID", "Título", "Total Préstamos"), show="headings")
+        tabla_reporte.heading("ID", text="ID Libro")
+        tabla_reporte.heading("Título", text="Título")
+        tabla_reporte.heading("Total Préstamos", text="Total Préstamos")
+
+        # Centrando las columnas y ajustando el ancho
+        for col in ("ID", "Título", "Total Préstamos"):
+            tabla_reporte.column(col, width=200, anchor="center")
+
+        # Posicionar la tabla en coordenadas específicas dentro del área de reporte
+        tabla_reporte.place(x=120, y=50, width=650, height=300)
+
+        # Agregar scroll vertical al Treeview
+        scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
+        tabla_reporte.configure(yscrollcommand=scroll_y.set)
+        scroll_y.place(x=770, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
+
+        # Insertar datos en la tabla (ajuste para acceder por índice)
+        for libro in libros_mas_prestados:
+            tabla_reporte.insert("", tk.END, values=(libro[0], libro[1], libro[2]))
+            
     def generar_reporte_usuarios_mas_prestamos(self):
-        # Lógica para obtener y mostrar el reporte de usuarios con más préstamos
-        messagebox.showinfo("Reporte", "Generando reporte de usuarios con más préstamos.")
+        """Genera y muestra el reporte de usuarios con más préstamos en el área de reportes."""
+        # Muestra o limpia el área del reporte
+        self.mostrar_area_reporte()
+
+        # Obtener la lista de usuarios con más préstamos del último mes
+        usuarios_mas_prestamos = Prestamo.obtener_usuarios_mas_prestamos()  # Método de consulta en la clase Prestamo
+
+        if not usuarios_mas_prestamos:
+            tk.Label(self.frame_reporte, text="No hay usuarios con préstamos en el último mes.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
+            return
+
+        # Título del reporte
+        titulo_label = tk.Label(
+            self.frame_reporte, 
+            text="Reporte de Usuarios con Más Préstamos en el Último Mes", 
+            font=("Trebuchet MS", 16, "bold"),
+            bg="#f0f0f0"
+        )
+        titulo_label.place(x=300, y=10)
+
+        # Crear un Treeview para mostrar los datos en formato tabular
+        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("ID", "Nombre", "Apellido", "Total Préstamos"), show="headings")
+        tabla_reporte.heading("ID", text="ID Usuario")
+        tabla_reporte.heading("Nombre", text="Nombre")
+        tabla_reporte.heading("Apellido", text="Apellido")
+        tabla_reporte.heading("Total Préstamos", text="Total Préstamos")
+
+        # Centrando las columnas y ajustando el ancho
+        for col in ("ID", "Nombre", "Apellido", "Total Préstamos"):
+            tabla_reporte.column(col, width=150, anchor="center")
+
+        # Posicionar la tabla en coordenadas específicas dentro del área de reporte
+        tabla_reporte.place(x=120, y=50, width=650, height=300)
+
+        # Agregar scroll vertical al Treeview
+        scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
+        tabla_reporte.configure(yscrollcommand=scroll_y.set)
+        scroll_y.place(x=770, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
+
+        # Insertar datos en la tabla
+        for usuario in usuarios_mas_prestamos:
+            tabla_reporte.insert("", tk.END, values=(usuario[0], usuario[1], usuario[2], usuario[3]))
 
     def generar_reporte_libros_por_autor(self):
-        # Lógica para obtener y mostrar el reporte de libros por autor
-        messagebox.showinfo("Reporte", "Generando reporte de libros por autor.")
+        """Genera y muestra el reporte de libros por autor en el área de reportes."""
+        # Muestra o limpia el área del reporte
+        self.mostrar_area_reporte()
+
+        # Obtener la lista de libros por autor
+        libros_por_autor = Libro.obtener_libros_por_autor()  # Método de consulta en la clase Libro
+
+        if not libros_por_autor:
+            tk.Label(self.frame_reporte, text="No hay libros disponibles.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
+            return
+
+        # Título del reporte
+        titulo_label = tk.Label(
+            self.frame_reporte, 
+            text="Reporte de Libros por Autor", 
+            font=("Trebuchet MS", 16, "bold"),
+            bg="#f0f0f0"
+        )
+        titulo_label.place(x=300, y=10)
+
+        # Crear un Treeview para mostrar los datos en formato tabular
+        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("Autor", "Cantidad Libros", "Total Disponibles"), show="headings")
+        tabla_reporte.heading("Autor", text="Autor")
+        tabla_reporte.heading("Cantidad Libros", text="Cantidad de Libros")
+        tabla_reporte.heading("Total Disponibles", text="Total Disponibles")
+
+        # Centrando las columnas y ajustando el ancho
+        for col in ("Autor", "Cantidad Libros", "Total Disponibles"):
+            tabla_reporte.column(col, width=200, anchor="center")
+
+        # Posicionar la tabla en coordenadas específicas dentro del área de reporte
+        tabla_reporte.place(x=120, y=50, width=650, height=300)
+
+        # Agregar scroll vertical al Treeview
+        scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
+        tabla_reporte.configure(yscrollcommand=scroll_y.set)
+        scroll_y.place(x=770, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
+
+        # Insertar datos en la tabla
+        for autor in libros_por_autor:
+            tabla_reporte.insert("", tk.END, values=(autor[0], autor[1], autor[2]))
 
     def generar_reporte_usuarios_penalizados(self):
-        # Lógica para obtener y mostrar el reporte de usuarios con penalizaciones activas
-        messagebox.showinfo("Reporte", "Generando reporte de usuarios penalizados.")
+        """Genera y muestra el reporte de usuarios con penalizaciones."""
+        # Muestra o limpia el área del reporte
+        self.mostrar_area_reporte()
+
+        # Obtener la lista de usuarios con penalizaciones
+        penalizaciones = Usuario.obtener_usuarios_con_penalizaciones()
+
+        if not penalizaciones:
+            tk.Label(self.frame_reporte, text="No hay usuarios con penalizaciones.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
+            return
+
+        # Título del reporte
+        titulo_label = tk.Label(
+            self.frame_reporte, 
+            text="Reporte de Usuarios con Penalizaciones", 
+            font=("Trebuchet MS", 16, "bold"),
+            bg="#f0f0f0"
+        )
+        titulo_label.place(x=300, y=10)
+
+        # Crear un Treeview para mostrar los datos en formato tabular
+        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("Nombre", "Apellido", "Monto", "Motivo"), show="headings")
+        tabla_reporte.heading("Nombre", text="Nombre")
+        tabla_reporte.heading("Apellido", text="Apellido")
+        tabla_reporte.heading("Monto", text="Monto")
+        tabla_reporte.heading("Motivo", text="Motivo")
+
+        # Centrando las columnas y ajustando el ancho
+        for col in ("Nombre", "Apellido", "Monto", "Motivo"):
+            tabla_reporte.column(col, width=200, anchor="center")
+
+        # Posicionar la tabla en coordenadas específicas dentro del área de reporte
+        tabla_reporte.place(x=120, y=50, width=650, height=300)
+
+        # Agregar scroll vertical al Treeview
+        scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
+        tabla_reporte.configure(yscrollcommand=scroll_y.set)
+        scroll_y.place(x=770, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
+
+        # Insertar datos en la tabla
+        for penalizacion in penalizaciones:
+            tabla_reporte.insert("", tk.END, values=(penalizacion[0], penalizacion[1], penalizacion[2], penalizacion[3]))  # Asegúrate de que los índices coincidan con los datos obtenidos
+
+            # Obtener la lista de usuarios con penalizaciones
+            penalizaciones_activas = Usuario.obtener_usuarios_penalizaciones()
+
+            if not penalizaciones_activas:
+                tk.Label(self.frame_reporte, text="No hay usuarios con penalizaciones activas.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
+                return
+
+            # Título del reporte
+            titulo_label = tk.Label(
+                self.frame_reporte, 
+                text="Reporte de Usuarios con Penalizaciones", 
+                font=("Trebuchet MS", 16, "bold"),
+                bg="#f0f0f0"
+            )
+            titulo_label.place(x=300, y=10)
+
+            # Crear un Treeview para mostrar los datos en formato tabular
+            tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("Usuario ID", "Monto", "Motivo"), show="headings")
+            tabla_reporte.heading("Usuario ID", text="Usuario ID")
+            tabla_reporte.heading("Monto", text="Monto")
+            tabla_reporte.heading("Motivo", text="Motivo")
+
+            # Centrando las columnas y ajustando el ancho
+            for col in ("Usuario ID", "Monto", "Motivo"):
+                tabla_reporte.column(col, width=200, anchor="center")
+
+            # Posicionar la tabla en coordenadas específicas dentro del área de reporte
+            tabla_reporte.place(x=120, y=50, width=650, height=300)
+
+            # Agregar scroll vertical al Treeview
+            scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
+            tabla_reporte.configure(yscrollcommand=scroll_y.set)
+            scroll_y.place(x=770, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
+
+            # Insertar datos en la tabla
+            for penalizacion in penalizaciones_activas:
+                tabla_reporte.insert("", tk.END, values=(penalizacion[0], penalizacion[1], penalizacion[2]))  # Asegúrate de que los índices coincidan con los datos obtenidos
 
     def generar_reporte_donaciones(self):
         # Lógica para obtener y mostrar el reporte de donaciones

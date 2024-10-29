@@ -105,3 +105,19 @@ class Usuario():
         except sqlite3.Error as e:
             print(f"Error al listar usuarios: {e}")
             return []
+        
+    @classmethod
+    def obtener_usuarios_con_penalizaciones(cls):
+        """Obtiene una lista de usuarios con penalizaciones desde la base de datos."""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                cursor = db_manager.conn.execute('''
+                    SELECT u.nombre, u.apellido, p.monto, p.motivo 
+                    FROM usuarios u
+                    JOIN penalizacion p ON u.id = p.usuario_id;
+                ''')
+                return cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"Error al listar usuarios con penalizaciones: {e}")
+            return []

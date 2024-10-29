@@ -1,5 +1,7 @@
 import sys
 import os
+
+from models.penalizacion import Penalizacion
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
@@ -96,14 +98,13 @@ class Prestamo:
                     WHERE codigo_isbn = ?;
                 ''', (codigo_isbn,))
 
-                # Calcular multa si hay retraso
-                fecha_devolucion_dt = datetime.strptime(fecha_devolucion, "%Y-%m-%d")
-                fecha_devolucion_estimada_dt = datetime.strptime(fecha_devolucion_estimada, "%Y-%m-%d")
-                dias_retraso = (fecha_devolucion_dt - fecha_devolucion_estimada_dt).days
+                multa = cls.calcular_multa(fecha_devolucion, fecha_devolucion_estimada)
 
-                if dias_retraso > 0:
-                    multa = dias_retraso * 100
-                    print(f"Devolución registrada con retraso de {dias_retraso} días. Multa: {multa}.")
+                if multa > 0:
+                    print(f"Devolución registrada con retraso. Multa: {multa}.")
+                    # Crear e insertar la penalización
+                    penalizacion = Penalizacion(usuario_id, multa, "Devolución tardía")
+                    penalizacion.guardar()  # Guardar la penalización en la base de datos
                 else:
                     print("Devolución registrada a tiempo. No hay multa.")
 
@@ -196,3 +197,51 @@ class Prestamo:
         except sqlite3.Error as e:
             print(f"Error al obtener préstamos vencidos: {e}")
             raise e
+        
+    @classmethod
+    def obtener_libros_mas_prestados(cls, limite=5):
+        """Obtiene una lista de los libros más prestados en el último mes."""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                # Consulta para obtener la cantidad de préstamos por libro en el último mes
+                cursor = db_manager.conn.execute('''
+                    SELECT l.codigo_isbn, l.titulo, COUNT(p.id) AS cantidad_prestamos
+                    FROM prestamos p
+                    JOIN libros l ON p.libro_isbn = l.codigo_isbn
+                    WHERE p.fecha_prestamo >= DATE('now', '-1 month')
+                    GROUP BY l.codigo_isbn, l.titulo
+                    ORDER BY cantidad_prestamos DESC
+                    LIMIT ?;
+                ''', (limite,))
+                
+                libros_mas_prestados = cursor.fetchall()
+
+            print("Libros más prestados en el último mes obtenidos correctamente.")
+            return libros_mas_prestados
+        except sqlite3.Error as e:
+            print(f"Error al obtener los libros más prestados: {e}")
+            return []
+    @classmethod
+    def obtener_usuarios_mas_prestamos(cls, limite=5):
+        """Obtiene una lista de los usuarios con más préstamos en el último mes."""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                cursor = db_manager.conn.execute('''
+                    SELECT u.id, u.nombre, u.apellido, COUNT(p.id) AS total_prestamos
+                    FROM prestamos p
+                    JOIN usuarios u ON p.usuario_id = u.id
+                    WHERE p.fecha_prestamo >= DATE('now', '-1 month')
+                    GROUP BY u.id, u.nombre, u.apellido
+                    ORDER BY total_prestamos DESC
+                    LIMIT ?;
+                ''', (limite,))
+                
+                usuarios_mas_prestamos = cursor.fetchall()
+
+            print("Usuarios con más préstamos en el último mes obtenidos correctamente.")
+            return usuarios_mas_prestamos
+        except sqlite3.Error as e:
+            print(f"Error al obtener los usuarios con más préstamos: {e}")
+            return []

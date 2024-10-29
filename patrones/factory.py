@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from models.autor import Autor
 from models.libro import Libro
+from models.penalizacion import Penalizacion
 from models.prestamo import Prestamo
 from models.usuario import Usuario
 from models.reserva import Reserva
@@ -43,3 +44,8 @@ class ReservaFactory(Factory):
 class BajasFactory(Factory):
     def factory_method(self, libro_isbn, motivo, usuario_id=None):
         return Bajas(libro_isbn, motivo, usuario_id)
+
+# Fábrica concreta para crear instancias de Penalizacion
+class PenalizacionFactory(Factory):
+    def factory_method(self, usuario_id, monto, motivo):
+        return Penalizacion(usuario_id, monto, motivo)

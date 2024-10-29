@@ -164,3 +164,27 @@ class Libro(Subject):
         except sqlite3.Error as e:
             print(f"Error al listar los libros: {e}")
             return []
+        
+    @classmethod
+    def obtener_libros_por_autor(cls):
+        """Obtiene una lista de libros por autor con un resumen de la cantidad de libros disponibles por autor."""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                cursor = db_manager.conn.execute('''
+                    SELECT a.nombre || ' ' || a.apellido AS autor, 
+                        COUNT(l.codigo_isbn) AS cantidad_libros, 
+                        SUM(l.cantidad_disponible) AS total_disponibles
+                    FROM libros l
+                    JOIN autores a ON l.autor_id = a.id
+                    GROUP BY a.id
+                    ORDER BY a.nombre, a.apellido ASC;
+                ''')
+                
+                libros_por_autor = cursor.fetchall()
+
+            print("Libros por autor obtenidos correctamente.")
+            return libros_por_autor
+        except sqlite3.Error as e:
+            print(f"Error al obtener los libros por autor: {e}")
+            return []
