@@ -4,6 +4,7 @@ from tkcalendar import DateEntry
 from tkinter import ttk 
 import sys
 import os
+from models.bajas import Bajas
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tkinter import messagebox
@@ -46,7 +47,8 @@ class BibliotecaApp:
             ("Devolución de Libros", self.mostrar_devolucion_libros),
             ("Consulta de Disponibilidad", self.mostrar_consulta_disponibilidad),
             ("Reserva de Libros", self.mostrar_reserva_libros),
-            ("Reportes", self.mostrar_reportes)  # Añade el botón de Reportes
+            ("Baja de Libros", self.mostrar_baja_libros),
+            ("Reportes", self.mostrar_reportes)
         ]
 
         # Posicionar los botones en una cuadrícula de 2 columnas a la derecha
@@ -56,9 +58,9 @@ class BibliotecaApp:
             boton = tk.Button(self.frame_inicial, text=text, width=25, height=2, font=("Trebuchet MS", 11), bg="orange", command=command)
             boton.place(x=x_offset + (i % 2) * 250, y=y_offset + (i // 2) * 70)
 
-        # Botón de cerrar al centro de la zona de botones
+        # Botón de cerrar en una posición fija
         self.cerrar_boton = tk.Button(self.frame_inicial, text="Cerrar", width=20, height=2, font=("Trebuchet MS", 11), bg="maroon", fg="white", command=self.root.quit)
-        self.cerrar_boton.place(x=1000, y=500)
+        self.cerrar_boton.place(x=1000, y=550)  # Asegúrate de que estas coordenadas sean fijas
 
     def ocultar_inicio(self):
         """Oculta el frame inicial y el botón de cerrar."""
@@ -714,6 +716,121 @@ class BibliotecaApp:
             command=self.root.quit
         )
         cerrar_boton.place(x=740, y=320)
+    
+    def mostrar_baja_libros(self):
+        """Muestra la interfaz de baja de libros y oculta los elementos anteriores."""
+        self.ocultar_inicio()  # Ocultar los elementos del inicio
+
+        # Frame de baja de libros
+        self.frame_baja_libros = tk.Frame(self.root, width=self.root.winfo_screenwidth(), height=self.root.winfo_screenheight(), bg="#f0f0f0")
+        self.frame_baja_libros.pack(fill="both", expand=True)
+
+        # Título de la página de baja de libros
+        titulo_label = tk.Label(self.frame_baja_libros, text="Baja de Libros", font=("Trebuchet MS", 20, "bold"), bg="#f0f0f0")
+        titulo_label.place(x=600, y=50)
+
+        # Combobox para seleccionar el Libro
+        tk.Label(self.frame_baja_libros, text="Selecciona el Libro:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=475, y=150)
+        libros = Libro.listar_libros()
+        self.libro_combobox = ttk.Combobox(
+            self.frame_baja_libros,
+            values=[f"({libro[0]}) - {libro[1]}" for libro in libros],
+            font=("Trebuchet MS", 12),
+            width=22,
+            state="readonly"
+        )
+        self.libro_combobox.place(x=650, y=150)
+
+        # Combobox para seleccionar el Usuario
+        tk.Label(self.frame_baja_libros, text="Selecciona el Usuario:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=475, y=190)
+        usuarios = Usuario.listar_usuarios()
+        self.usuario_combobox = ttk.Combobox(
+            self.frame_baja_libros,
+            values=[f"{usuario[0]} - {usuario[1]} {usuario[2]}" for usuario in usuarios],
+            font=("Trebuchet MS", 12),
+            width=22,
+            state="readonly"
+        )
+        self.usuario_combobox.place(x=650, y=190)
+
+        # Motivo de la Baja
+        tk.Label(self.frame_baja_libros, text="Motivo de la Baja:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=475, y=230)
+        self.motivo_combobox = ttk.Combobox(
+            self.frame_baja_libros,
+            values=["dañado", "perdido"],
+            font=("Trebuchet MS", 12),
+            width=22,
+            state="readonly"
+        )
+        self.motivo_combobox.place(x=650, y=230)
+
+        # Fecha de Baja
+        fecha_baja = datetime.now().strftime("%Y-%m-%d")
+        tk.Label(self.frame_baja_libros, text="Fecha de Baja:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=475, y=270)
+        self.fecha_baja_label = tk.Label(self.frame_baja_libros, text=fecha_baja, font=("Trebuchet MS", 12), bg="#f0f0f0")
+        self.fecha_baja_label.place(x=650, y=270)
+
+        # Botón "Volver" en naranja
+        volver_boton = tk.Button(
+            self.frame_baja_libros, 
+            text="Volver", 
+            width=10, 
+            height=2, 
+            font=("Trebuchet MS", 12), 
+            bg="#E9F98B", 
+            command=self.volver_inicio
+        )
+        volver_boton.place(x=500, y=380)
+
+        # Botón "Registrar" en marrón oscuro
+        registrar_boton = tk.Button(
+            self.frame_baja_libros, 
+            text="Registrar", 
+            width=10, 
+            height=2, 
+            font=("Trebuchet MS", 12), 
+            bg="orange", 
+            command=self.registrar_baja
+        )
+        registrar_boton.place(x=620, y=380)
+
+        # Botón "Cerrar" en su posición habitual
+        cerrar_boton = tk.Button(
+            self.frame_baja_libros, 
+            text="Cerrar", 
+            width=10, 
+            height=2, 
+            font=("Trebuchet MS", 12), 
+            bg="maroon", 
+            fg="white", 
+            command=self.root.quit
+        )
+        cerrar_boton.place(x=740, y=380)
+
+    def registrar_baja(self):
+        """Registrar la baja de un libro en la base de datos."""
+        libro_seleccionado = self.libro_combobox.get()
+        usuario_seleccionado = self.usuario_combobox.get()
+        motivo_seleccionado = self.motivo_combobox.get()
+
+        if not libro_seleccionado or not motivo_seleccionado:
+            messagebox.showwarning("Advertencia", "Por favor, completa todos los campos obligatorios.")
+            return
+
+        libro_isbn = libro_seleccionado.split(" ")[0].strip("()")  # Obtener el ISBN del libro seleccionado
+        usuario_id = usuario_seleccionado.split(" - ")[0] if usuario_seleccionado else None  # Obtener ID del usuario si se seleccionó
+
+        # Obtener el libro por ISBN
+        libro = Libro.obtener_libro_por_isbn(libro_isbn)
+
+        if libro is not None:
+            # Llamar al método dar_de_baja del objeto libro
+            libro.dar_de_baja(motivo_seleccionado, usuario_id)
+            messagebox.showinfo("Éxito", "La baja del libro se ha registrado correctamente.")
+        else:
+            messagebox.showerror("Error", "No se pudo encontrar el libro para dar de baja.")
+
+        self.volver_inicio()
 
     def mostrar_reportes(self):
         """Muestra la interfaz de reportes y oculta los elementos anteriores."""
@@ -1004,58 +1121,22 @@ class BibliotecaApp:
         tabla_reporte.heading("Motivo", text="Motivo")
 
         # Centrando las columnas y ajustando el ancho
-        for col in ("Nombre", "Apellido", "Monto", "Motivo"):
-            tabla_reporte.column(col, width=200, anchor="center")
+        tabla_reporte.column("Nombre", width=200, anchor="center")
+        tabla_reporte.column("Apellido", width=200, anchor="center")
+        tabla_reporte.column("Monto", width=100, anchor="center")
+        tabla_reporte.column("Motivo", width=250, anchor="center")  # Aumenta el ancho de la columna "Motivo"
 
         # Posicionar la tabla en coordenadas específicas dentro del área de reporte
-        tabla_reporte.place(x=120, y=50, width=650, height=300)
+        tabla_reporte.place(x=20, y=50, width=800, height=300)  # Ajustar el ancho total del Treeview
 
         # Agregar scroll vertical al Treeview
         scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
         tabla_reporte.configure(yscrollcommand=scroll_y.set)
-        scroll_y.place(x=770, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
+        scroll_y.place(x=820, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
 
         # Insertar datos en la tabla
         for penalizacion in penalizaciones:
             tabla_reporte.insert("", tk.END, values=(penalizacion[0], penalizacion[1], penalizacion[2], penalizacion[3]))  # Asegúrate de que los índices coincidan con los datos obtenidos
-
-            # Obtener la lista de usuarios con penalizaciones
-            penalizaciones_activas = Usuario.obtener_usuarios_penalizaciones()
-
-            if not penalizaciones_activas:
-                tk.Label(self.frame_reporte, text="No hay usuarios con penalizaciones activas.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
-                return
-
-            # Título del reporte
-            titulo_label = tk.Label(
-                self.frame_reporte, 
-                text="Reporte de Usuarios con Penalizaciones", 
-                font=("Trebuchet MS", 16, "bold"),
-                bg="#f0f0f0"
-            )
-            titulo_label.place(x=300, y=10)
-
-            # Crear un Treeview para mostrar los datos en formato tabular
-            tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("Usuario ID", "Monto", "Motivo"), show="headings")
-            tabla_reporte.heading("Usuario ID", text="Usuario ID")
-            tabla_reporte.heading("Monto", text="Monto")
-            tabla_reporte.heading("Motivo", text="Motivo")
-
-            # Centrando las columnas y ajustando el ancho
-            for col in ("Usuario ID", "Monto", "Motivo"):
-                tabla_reporte.column(col, width=200, anchor="center")
-
-            # Posicionar la tabla en coordenadas específicas dentro del área de reporte
-            tabla_reporte.place(x=120, y=50, width=650, height=300)
-
-            # Agregar scroll vertical al Treeview
-            scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
-            tabla_reporte.configure(yscrollcommand=scroll_y.set)
-            scroll_y.place(x=770, y=50, height=300)  # Ajusta 'x' y 'y' según el ancho y la posición del Treeview
-
-            # Insertar datos en la tabla
-            for penalizacion in penalizaciones_activas:
-                tabla_reporte.insert("", tk.END, values=(penalizacion[0], penalizacion[1], penalizacion[2]))  # Asegúrate de que los índices coincidan con los datos obtenidos
 
     def generar_reporte_donaciones(self):
         # Lógica para obtener y mostrar el reporte de donaciones
@@ -1191,6 +1272,8 @@ class BibliotecaApp:
             self.frame_consulta_disponibilidad.pack_forget()
         if hasattr(self, 'frame_reserva_libros'):
             self.frame_reserva_libros.pack_forget()
+        if hasattr(self, 'frame_baja_libros'):
+            self.frame_baja_libros.pack_forget()
         if hasattr(self, 'frame_reportes'):
             self.frame_reportes.pack_forget()
 
@@ -1198,7 +1281,7 @@ class BibliotecaApp:
         self.frame_inicial.place(x=0, y=0, width=self.root.winfo_screenwidth(), height=self.root.winfo_screenheight())
         
         # Volver a mostrar el botón de cerrar con la misma posición y estilo
-        self.cerrar_boton.place(x=1000, y=500)
+        self.cerrar_boton.place(x=1000, y=550)
 
     # Funciones de otras funcionalidades
     def registrar_libro(self):

@@ -1,5 +1,7 @@
 import sys
 import os
+
+from models.bajas import Bajas
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
@@ -113,33 +115,52 @@ class Libro(Subject):
             self.notify()
             self._observers = []
 
+    @classmethod
+    def obtener_libro_por_isbn(cls, codigo_isbn):
+        """Obtiene un objeto Libro a partir de su ISBN."""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                cursor = db_manager.conn.execute(
+                    "SELECT codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible FROM libros WHERE codigo_isbn = ?;", (codigo_isbn,)
+                )
+                result = cursor.fetchone()
+                if result:
+                    codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible = result
+                    return cls(codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible)
+                else:
+                    print(f"No se encontró un libro con ISBN {codigo_isbn}.")
+                    return None
+        except sqlite3.Error as e:
+            print(f"Error al obtener el libro: {e}")
+            return None
+
     def dar_de_baja(self, motivo, usuario_id=None):
-        # Dar de baja el libro y registrar en el historial de bajas si está disponible
+        """Dar de baja el libro y registrar la baja en la tabla de bajas_libros si está disponible."""
         # Consultar la disponibilidad antes de proceder con la baja
         cantidad_disponible = self.consultar_disponibilidad(self.codigo_isbn)
         
         if cantidad_disponible > 0:
+            # Crear una instancia de Bajas
+            baja = Bajas(libro_isbn=self.codigo_isbn, motivo=motivo, usuario_id=usuario_id)
+
+            # Guardar la baja en la base de datos
+            baja.guardar()
+
+            # Reducir la cantidad disponible del libro
+            nueva_cantidad = cantidad_disponible - 1
             db_manager = DatabaseManager()
-            fecha_baja = datetime.now().strftime("%Y-%m-%d")
-            
             try:
                 with db_manager.conn:
-                    # Registrar la baja en la tabla de bajas_libros
-                    db_manager.conn.execute('''
-                        INSERT INTO bajas_libros (codigo_isbn, motivo, fecha_baja, usuario_id)
-                        VALUES (?, ?, ?, ?);
-                    ''', (self.codigo_isbn, motivo, fecha_baja, usuario_id))
-
-                    # Reducir la cantidad disponible del libro
-                    nueva_cantidad = cantidad_disponible - 1
-                    db_manager.conn.execute('''
+                    db_manager.conn.execute(''' 
                         UPDATE libros SET cantidad_disponible = ? WHERE codigo_isbn = ?;
                     ''', (nueva_cantidad, self.codigo_isbn))
                     print(f"Libro con ISBN {self.codigo_isbn} dado de baja como {motivo}. Cantidad disponible actualizada a {nueva_cantidad}.")
             except sqlite3.Error as e:
-                print(f"Error al dar de baja el libro: {e}")
+                print(f"Error al actualizar la cantidad del libro: {e}")
         else:
             print(f"No hay ejemplares disponibles para dar de baja el libro con ISBN {self.codigo_isbn}.")
+
 
     @classmethod
     def listar_libros(cls, disponibilidad='todos'):
