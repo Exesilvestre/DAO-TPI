@@ -5,13 +5,14 @@ from models.penalizacion import Penalizacion
 from models.prestamo import Prestamo
 from models.usuario import Usuario
 from models.reserva import Reserva
-from models.bajas import Bajas
+from models.baja import Baja
+from models.donacion import Donacion
+
 # Clase abstracta Factory
 class Factory(ABC):
     @abstractmethod
     def factory_method(self, *args, **kwargs):
         pass
-
 
 # Fábrica concreta para crear instancias de Autor
 class AutorFactory(Factory):
@@ -40,12 +41,17 @@ class ReservaFactory(Factory):
     def factory_method(self, usuario_id, codigo_isbn, estado="pendiente"):
         return Reserva(usuario_id, codigo_isbn, estado)
 
-        # Fábrica concreta para crear instancias de Bajas
+# Fábrica concreta para crear instancias de Baja
 class BajasFactory(Factory):
     def factory_method(self, libro_isbn, motivo, usuario_id=None):
-        return Bajas(libro_isbn, motivo, usuario_id)
+        return Baja(libro_isbn, motivo, usuario_id)
 
 # Fábrica concreta para crear instancias de Penalizacion
 class PenalizacionFactory(Factory):
     def factory_method(self, usuario_id, monto, motivo):
         return Penalizacion(usuario_id, monto, motivo)
+    
+# Fábrica concreta para crear instancias de Donacion
+class DonacionFactory(Factory):
+    def factory_method(self, tipo_donacion, nombre_institucion=None, usuario_id=None, codigo_isbn=None, cantidad=0):
+        return Donacion(tipo_donacion, nombre_institucion, usuario_id, codigo_isbn, cantidad)

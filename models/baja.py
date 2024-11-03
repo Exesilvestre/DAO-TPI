@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
 import sqlite3
 
-class Bajas:
+class Baja:
     def __init__(self, libro_isbn, motivo, usuario_id=None):
         self.libro_isbn = libro_isbn
         self.motivo = motivo  # Debe ser "dañado" o "perdido"

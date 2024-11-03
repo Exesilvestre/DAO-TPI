@@ -110,6 +110,21 @@ class DatabaseManager:
             )''')
             print("Tabla penalizacion creada o ya existente.")
 
+            # Crear tabla de donaciones
+            self.conn.execute('''
+                CREATE TABLE IF NOT EXISTS donaciones (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    fecha TEXT NOT NULL,
+                    nombre_institucion TEXT,
+                    usuario_id INTEGER,
+                    codigo_isbn TEXT NOT NULL,
+                    cantidad_donada INTEGER NOT NULL,
+                    FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+                    FOREIGN KEY (codigo_isbn) REFERENCES libros(codigo_isbn)
+                )
+            ''')
+            print("Tabla donaciones creada o ya existente.")
+
 
     def _tabla_tiene_datos(self, tabla):
         cursor = self.conn.execute(f'SELECT COUNT(*) FROM {tabla}')

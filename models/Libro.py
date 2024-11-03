@@ -1,7 +1,7 @@
 import sys
 import os
 
-from models.bajas import Bajas
+from models.baja import Baja
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
@@ -142,7 +142,7 @@ class Libro(Subject):
         
         if cantidad_disponible > 0:
             # Crear una instancia de Bajas
-            baja = Bajas(libro_isbn=self.codigo_isbn, motivo=motivo, usuario_id=usuario_id)
+            baja = Baja(libro_isbn=self.codigo_isbn, motivo=motivo, usuario_id=usuario_id)
 
             # Guardar la baja en la base de datos
             baja.guardar()

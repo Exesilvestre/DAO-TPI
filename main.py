@@ -1,11 +1,13 @@
 from db_management.db_manager import DatabaseManager
-from interfaz.biblioteca_app import crear_interfaz
-
+import tkinter as tk
+from interfaz.biblioteca_app import BibliotecaApp
 def main():
-    # Inicializar el manejador de base de datos
+
     db_manager = DatabaseManager()
 
-    crear_interfaz()
+    root = tk.Tk()
+    app = BibliotecaApp(root)
+    root.mainloop()
 
     db_manager.cerrar_conexion()
 
