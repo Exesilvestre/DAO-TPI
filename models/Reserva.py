@@ -11,6 +11,7 @@ sys.path.append("..")
 
 class Reserva(Observer):
     def __init__(self, usuario_id, codigo_isbn, estado="pendiente"):
+        super().__init__()
         self.usuario_id = usuario_id
         self.codigo_isbn = codigo_isbn
         self.fecha_reserva = datetime.now().strftime("%Y-%m-%d")

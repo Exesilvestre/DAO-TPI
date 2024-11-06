@@ -7,24 +7,28 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
 import sqlite3
 from patrones.observer import Subject
-from models.autor import Autor
-from models.reserva import Reserva
+from models.Autor import Autor
+from models.Reserva import Reserva
 from datetime import datetime
 
 
 class Libro(Subject):
     def __init__(self, codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible):
+        super().__init__()
         self.codigo_isbn = codigo_isbn
         self.titulo = titulo
         self.genero = genero
         self.anio_publicacion = anio_publicacion
         self.autor_id = autor_id
-        self.cantidad_disponible = cantidad_disponible
+        self.cantidad_disponible = int(cantidad_disponible)
+        self.cargar_reservas_pendientes()
 
     def __str__(self):
         return (f"Libro: ISBN: {self.codigo_isbn}, Título: {self.titulo}, Género: {self.genero}, "
                 f"Año: {self.anio_publicacion}, Autor ID: {self.autor_id}, "
                 f"Cantidad disponible: {self.cantidad_disponible}")
+    
+    #Metodo para cargar las reservas pendientes como observer del libro
 
     def guardar(self):
         db_manager = DatabaseManager()
@@ -50,6 +54,10 @@ class Libro(Subject):
                         (nueva_cantidad, self.codigo_isbn)
                     )
                     print(f"Cantidad del libro con ISBN '{self.codigo_isbn}' actualizada a {nueva_cantidad}.")
+                    # Notificar a los observadores que la disponibilidad del libro ha cambiado
+                    print(f"Longitud de lista de observadores: {len(self._observers)}")
+                    
+                    self.notificar_disponibilidad()
                 else:
                     # Si el libro no existe, crear un nuevo registro
                     db_manager.conn.execute('''
@@ -110,10 +118,32 @@ class Libro(Subject):
 
     def notificar_disponibilidad(self):
         """Notifica a los observadores cuando el libro esté disponible"""
-        if self.consultar_disponibilidad() > 0:
+        if self.consultar_disponibilidad(self.codigo_isbn) > 0 and len(self._observers) > 0:
             print(f"El libro con ISBN {self.codigo_isbn} está disponible. Notificando a los usuarios en la lista de reservas...")
             self.notify()
+            print("Longitusd de observadores:", len(self._observers))
             self._observers = []
+
+    def cargar_reservas_pendientes(self):
+        """Carga las reservas pendientes como observers del libro"""
+        db_manager = DatabaseManager()
+        try:
+            with db_manager.conn:
+                cursor = db_manager.conn.execute('''
+                    SELECT usuario_id, libro_isbn, estado 
+                    FROM reservas 
+                    WHERE libro_isbn = ? AND estado = 'pendiente';
+                ''', (self.codigo_isbn,))
+                
+                reservas_pendientes = cursor.fetchall()
+                
+                for reserva in reservas_pendientes:
+                    usuario_id, libro_isbn, estado = reserva
+                    reserva_obj = Reserva(usuario_id, libro_isbn, estado)
+                    self.attach(reserva_obj)
+                    
+        except sqlite3.Error as e:
+            print(f"Error al cargar reservas pendientes: {e}")
 
     @classmethod
     def obtener_libro_por_isbn(cls, codigo_isbn):
@@ -134,6 +164,8 @@ class Libro(Subject):
         except sqlite3.Error as e:
             print(f"Error al obtener el libro: {e}")
             return None
+        
+
 
     def dar_de_baja(self, motivo, usuario_id=None):
         """Dar de baja el libro y registrar la baja en la tabla de bajas_libros si está disponible."""

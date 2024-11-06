@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from models.autor import Autor
-from models.libro import Libro
+from models.Autor import Autor
+from models.Libro import Libro
 from models.penalizacion import Penalizacion
-from models.prestamo import Prestamo
-from models.usuario import Usuario
-from models.reserva import Reserva
+from models.Prestamo import Prestamo
+from models.Usuario import Usuario
+from models.Reserva import Reserva
 from models.baja import Baja
 from models.donacion import Donacion
 
@@ -22,7 +22,8 @@ class AutorFactory(Factory):
 # Fábrica concreta para crear instancias de Libro
 class LibroFactory(Factory):
     def factory_method(self, codigo_isbn, titulo, genero, anio, autor_id, cantidad_disponible = None):
-        return Libro(codigo_isbn, titulo, genero, anio, autor_id, cantidad_disponible)
+        libro = Libro(codigo_isbn, titulo, genero, anio, autor_id, cantidad_disponible)
+        return libro
 
 
 # Fábrica concreta para crear instancias de Prestamo

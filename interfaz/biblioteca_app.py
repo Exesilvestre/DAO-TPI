@@ -11,10 +11,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tkinter import messagebox
 from patrones.factory import AutorFactory, LibroFactory, UsuarioFactory, PrestamoFactory, ReservaFactory, DonacionFactory
-from models.autor import Autor
-from models.libro import Libro
-from models.usuario import Usuario
-from models.prestamo import Prestamo
+from models.Autor import Autor
+from models.Libro import Libro
+from models.Usuario import Usuario
+from models.Prestamo import Prestamo
 from models.donacion import Donacion
 from datetime import datetime
 
@@ -175,6 +175,9 @@ class BibliotecaApp:
         tk.Label(self.frame_registro_libros, text="Código ISBN:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=500, y=150)
         self.isbn_entry = tk.Entry(self.frame_registro_libros, font=("Trebuchet MS", 12), width=25)
         self.isbn_entry.place(x=620, y=150)
+        # Metodo para verificar que el ISBN existe y autocompletar los datos
+        self.isbn_entry.bind('<FocusOut>', self.verificar_isbn_existente)
+
 
         tk.Label(self.frame_registro_libros, text="Título:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=545, y=190)
         self.titulo_entry = tk.Entry(self.frame_registro_libros, font=("Trebuchet MS", 12), width=25)
@@ -570,9 +573,23 @@ class BibliotecaApp:
         titulo_label.place(x=600, y=50)
 
         tk.Label(self.frame_baja_libros, text="Libro:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=565, y=150)
-        libros = Libro.listar_libros()
-        self.libro_combobox = ttk.Combobox(self.frame_baja_libros,values=[f"({libro[0]}) - {libro[1]}" for libro in libros],font=("Trebuchet MS", 12),width=35,state="readonly")
-        self.libro_combobox.place(x=650, y=150)
+        # Modified: Only get books with available copies
+        libros = [libro for libro in Libro.listar_libros() if Libro.consultar_disponibilidad(libro[0]) > 0]
+        if not libros:
+            mensaje_label = tk.Label(self.frame_baja_libros, 
+                                text="No hay libros disponibles para dar de baja", 
+                                font=("Trebuchet MS", 12, "italic"), 
+                                bg="#f0f0f0")
+            mensaje_label.place(x=650, y=150)
+        else:
+            self.libro_combobox = ttk.Combobox(
+                self.frame_baja_libros,
+                values=[f"({libro[0]}) - {libro[1]}" for libro in libros],
+                font=("Trebuchet MS", 12),
+                width=35,
+                state="readonly"
+            )
+            self.libro_combobox.place(x=650, y=150)
 
         tk.Label(self.frame_baja_libros, text="Usuario:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=550, y=190)
         usuarios = Usuario.listar_usuarios()
@@ -1086,3 +1103,28 @@ class BibliotecaApp:
     def validar_isbn(self, isbn):
         pattern = r"^\d{3}-\d-\d{2}-\d{6}-\d$"
         return bool(re.match(pattern, isbn))
+    
+    def verificar_isbn_existente(self, event):
+        isbn = self.isbn_entry.get()
+        
+        if Libro.existe_libro_con_isbn(isbn):
+            libro = Libro.obtener_libro_por_isbn(isbn)
+            if libro:
+                self.titulo_entry.delete(0, tk.END)
+                self.titulo_entry.insert(0, libro.titulo)
+                
+                self.genero_entry.delete(0, tk.END)
+                self.genero_entry.insert(0, libro.genero)
+                
+                self.anio_publicacion_entry.delete(0, tk.END)
+                self.anio_publicacion_entry.insert(0, libro.anio_publicacion)
+                
+                # Find and select the correct author in combobox
+                autores = Autor.listar_autores()
+                for i, autor in enumerate(autores):
+                    if autor[0] == libro.autor_id:
+                        self.autor_combobox.current(i)
+                        break
+                
+                messagebox.showinfo("ISBN Existente", 
+                                "Este libro ya existe en la base de datos. Los campos han sido autocompletados.")

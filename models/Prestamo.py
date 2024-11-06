@@ -5,8 +5,8 @@ from models.penalizacion import Penalizacion
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
-from models.usuario import Usuario
-from models.libro import Libro
+from models.Usuario import Usuario
+from models.Libro import Libro
 from datetime import datetime, timedelta
 import sqlite3
 
@@ -163,6 +163,7 @@ class Prestamo:
                     SELECT libro_isbn FROM prestamos WHERE id = ?;
                 ''', (prestamo_id,))
                 libro_isbn = cursor.fetchone()[0]
+                
 
                 # Incrementar la cantidad disponible del libro
                 db_manager.conn.execute('''
@@ -170,6 +171,10 @@ class Prestamo:
                     SET cantidad_disponible = cantidad_disponible + 1
                     WHERE codigo_isbn = ?;
                 ''', (libro_isbn,))
+                libro = Libro.obtener_libro_por_isbn(libro_isbn)
+                print("Longitud de observers a notificar:", len(libro._observers))
+                libro.notificar_disponibilidad()
+
 
             print(f"Préstamo con ID {prestamo_id} finalizado y disponibilidad de libro actualizada.")
         except sqlite3.Error as e:

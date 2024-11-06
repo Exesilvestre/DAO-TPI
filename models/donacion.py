@@ -5,7 +5,7 @@ import sqlite3
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
-from models.libro import Libro
+from models.Libro import Libro
 
 class Donacion:
     def __init__(self, tipo_donacion, nombre_institucion=None, usuario_id=None, codigo_isbn=None, cantidad=0, fecha=None):
