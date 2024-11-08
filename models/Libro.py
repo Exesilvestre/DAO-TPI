@@ -7,8 +7,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
 import sqlite3
 from patrones.observer import Subject
-from models.Autor import Autor
-from models.Reserva import Reserva
+from models.autor import Autor
+from models.reserva import Reserva
 from datetime import datetime
 
 

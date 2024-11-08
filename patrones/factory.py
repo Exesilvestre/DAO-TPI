@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from models.Autor import Autor
-from models.Libro import Libro
+from models.autor import Autor
+from models.libro import Libro
 from models.penalizacion import Penalizacion
-from models.Prestamo import Prestamo
-from models.Usuario import Usuario
-from models.Reserva import Reserva
+from models.prestamo import Prestamo
+from models.usuario import Usuario
+from models.reserva import Reserva
 from models.baja import Baja
 from models.donacion import Donacion
 
