@@ -15,7 +15,6 @@ Asegúrate de tener **Python 3.12** instalado en tu sistema. Si aún no lo tiene
 ## Instalación
 
 Sigue estos pasos para instalar y ejecutar el proyecto en tu entorno local.
-
 1. Clona este repositorio en tu máquina local (si no lo has hecho ya):
    ```bash
    git clone https://github.com/Exesilvestre/DAO-TPI.git
