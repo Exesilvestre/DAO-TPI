@@ -88,7 +88,7 @@ class Usuario():
                 if result:
                     tipo_usuario, prestamos_activos = result
                     max_prestamos = 3 if tipo_usuario == 'estudiante' else 5
-                    return prestamos_activos < max_prestamos
+                    return prestamos_activos <= max_prestamos
                 return False
         except sqlite3.Error as e:
             print(f"Error al verificar el límite de préstamos: {e}")

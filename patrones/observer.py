@@ -18,8 +18,5 @@ class Subject:
 class Observer(ABC):
     @abstractmethod
     def update(self):
-        """
-        Método abstracto que debe implementar cada observador para recibir notificaciones.
-        """
         pass
 

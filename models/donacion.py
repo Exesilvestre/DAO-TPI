@@ -50,9 +50,18 @@ class Donacion:
     def obtener_donaciones_por_periodo(cls, fecha_desde, fecha_hasta):
         db_manager = DatabaseManager()
         consulta = """
-            SELECT id, nombre_institucion, usuario_id, codigo_isbn, fecha, cantidad_donada
-            FROM donaciones
-            WHERE fecha BETWEEN ? AND ?
+            SELECT d.id,
+                CASE
+                    WHEN d.usuario_id IS NOT NULL THEN (SELECT u.nombre || ' ' || u.apellido FROM usuarios u WHERE u.id = d.usuario_id)
+                    ELSE d.nombre_institucion
+                END AS donante,
+                l.titulo AS libro,
+                d.fecha,
+                d.cantidad_donada
+            FROM donaciones d
+            JOIN libros l ON d.codigo_isbn = l.codigo_isbn
+            WHERE d.fecha BETWEEN ? AND ?
+            ORDER BY d.fecha ASC;
         """
         try:
             with db_manager.conn:
@@ -61,6 +70,7 @@ class Donacion:
         except sqlite3.Error as e:
             print(f"Error al obtener donaciones por periodo: {e}")
             return []
+
         
     # Añadir el método en la clase Donacion para obtener las donaciones de los últimos 12 meses
     @classmethod

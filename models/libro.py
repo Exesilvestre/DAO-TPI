@@ -106,18 +106,8 @@ class Libro(Subject):
             print(f"Error al consultar la disponibilidad del libro: {e}")
             return 0
 
-    # Permite a un usuario reservar el libro si no está disponible
-    def reservar(self, usuario_id):
-        if not self.consultar_disponibilidad() > 0:
-            reserva = Reserva(usuario_id, self.codigo_isbn)
-            reserva.guardar()
-            self.attach(reserva)
-            print(f"Reserva realizada para el usuario {usuario_id} porque el libro no está disponible.")
-        else:
-            print(f"El libro con ISBN {self.codigo_isbn} está disponible, no es necesario reservarlo.")
-
+    # Notifica a los observadores cuando el libro esté disponible
     def notificar_disponibilidad(self):
-        """Notifica a los observadores cuando el libro esté disponible"""
         if self.consultar_disponibilidad(self.codigo_isbn) > 0 and len(self._observers) > 0:
             print(f"El libro con ISBN {self.codigo_isbn} está disponible. Notificando a los usuarios en la lista de reservas...")
             self.notify()
@@ -147,23 +137,26 @@ class Libro(Subject):
 
     # Obtiene un objeto Libro a partir de su ISBN
     @classmethod
-    def obtener_libro_por_isbn(cls, codigo_isbn):
+    def obtener_libros_por_autor(cls):
         db_manager = DatabaseManager()
         try:
             with db_manager.conn:
-                cursor = db_manager.conn.execute(
-                    "SELECT codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible FROM libros WHERE codigo_isbn = ?;", (codigo_isbn,)
-                )
-                result = cursor.fetchone()
-                if result:
-                    codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible = result
-                    return cls(codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad_disponible)
-                else:
-                    print(f"No se encontró un libro con ISBN {codigo_isbn}.")
-                    return None
+                cursor = db_manager.conn.execute('''
+                    SELECT a.nombre || ' ' || a.apellido AS autor,
+                        l.codigo_isbn AS isbn,
+                        l.titulo AS titulo,
+                        l.cantidad_disponible AS cantidad_disponible
+                    FROM libros l
+                    JOIN autores a ON l.autor_id = a.id
+                    ORDER BY a.nombre, a.apellido, l.titulo ASC;
+                ''')
+                libros_por_autor = cursor.fetchall()
+
+            print("Libros por autor obtenidos correctamente.")
+            return libros_por_autor
         except sqlite3.Error as e:
-            print(f"Error al obtener el libro: {e}")
-            return None
+            print(f"Error al obtener los libros por autor: {e}")
+            return []
         
     # Dar de baja el libro y registrar la baja en la tabla de bajas_libros si está disponible
     def dar_de_baja(self, motivo, usuario_id=None):
@@ -216,22 +209,21 @@ class Libro(Subject):
             print(f"Error al listar los libros: {e}")
             return []
 
-    # Obtiene una lista de libros por autor con un resumen de la cantidad de libros disponibles por autor 
+    # Obtiene una lista de libros por autor con detalles de cada libro
     @classmethod
     def obtener_libros_por_autor(cls):
         db_manager = DatabaseManager()
         try:
             with db_manager.conn:
                 cursor = db_manager.conn.execute('''
-                    SELECT a.nombre || ' ' || a.apellido AS autor, 
-                        COUNT(l.codigo_isbn) AS cantidad_libros, 
-                        SUM(l.cantidad_disponible) AS total_disponibles
+                    SELECT a.nombre || ' ' || a.apellido AS autor,
+                        l.codigo_isbn AS isbn,
+                        l.titulo AS libro,
+                        l.cantidad_disponible AS cantidad_disponible
                     FROM libros l
                     JOIN autores a ON l.autor_id = a.id
-                    GROUP BY a.id
-                    ORDER BY a.nombre, a.apellido ASC;
+                    ORDER BY a.nombre, a.apellido, l.titulo ASC;
                 ''')
-                
                 libros_por_autor = cursor.fetchall()
 
             print("Libros por autor obtenidos correctamente.")

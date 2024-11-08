@@ -5,9 +5,14 @@ from tkinter import ttk
 import sys
 import re
 import os
+import platform
+import subprocess
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib import colors
 from interfaz.country_api import CountryAPI
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -197,7 +202,16 @@ class BibliotecaApp:
         self.titulo_entry.place(x=620, y=190)
 
         tk.Label(self.frame_registro_libros, text="Género:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=540, y=230)
-        self.genero_entry = tk.Entry(self.frame_registro_libros, font=("Trebuchet MS", 12), width=25)
+        # Lista de géneros literarios
+        generos = [
+            "Poesía", "Novela", "Ensayo", "Cuento", "Teatro", 
+            "Ficción", "Fantasía", "Ciencia Ficción", "Terror", 
+            "Romance", "Biografía", "Autobiografía", "Historia", 
+            "Filosofía", "Misterio", "Aventura", "Infantil", 
+            "Juvenil", "Autoayuda", "Policíaco","Crónica", "Memorias", 
+            "Viajes", "Humor"
+        ]
+        self.genero_entry = ttk.Combobox(self.frame_registro_libros, values=generos, font=("Trebuchet MS", 12), width=22, state="readonly")
         self.genero_entry.place(x=620, y=230)
 
         tk.Label(self.frame_registro_libros, text="Año de Publicación:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=465, y=270)
@@ -243,6 +257,9 @@ class BibliotecaApp:
         if int(cantidad) > 100:
             messagebox.showerror("Error", "La cantidad máxima permitida es de 100.")
             return
+        elif int(cantidad) <= 0:
+            messagebox.showerror("Error", "La cantidad mínima permitida es 1.")
+            return
 
         # Validar que el año de publicación no sea mayor al año actual
         anio_actual = datetime.now().year
@@ -260,7 +277,7 @@ class BibliotecaApp:
             messagebox.showinfo("Registro", "Libro registrado correctamente.")
             self.isbn_entry.delete(0, tk.END)
             self.titulo_entry.delete(0, tk.END)
-            self.genero_entry.delete(0, tk.END)
+            self.genero_entry.set('')
             self.anio_publicacion_entry.delete(0, tk.END)
             self.autor_combobox.set('')
             self.cantidad_libros_entry.delete(0, tk.END)
@@ -787,13 +804,15 @@ class BibliotecaApp:
             boton_reporte = tk.Button(self.frame_reportes, text=text, width=30, height=2, font=("Trebuchet MS", 12), bg="orange", command=command)
             boton_reporte.place(x=100, y=y_offset + i * 80)
 
-        volver_boton = tk.Button(self.frame_reportes, text="Volver", width=10, height=2, font=("Trebuchet MS", 12), bg="#E9F98B", command=self.volver_inicio)
-        volver_boton.place(x=700, y=600)
+        self.volver_boton = tk.Button(self.frame_reportes, text="Volver", width=10, height=2, font=("Trebuchet MS", 12), bg="#E9F98B", command=self.volver_inicio)
+        self.volver_boton.place(x=1070, y=600)
 
-        self.boton_grafico = tk.Button(self.frame_reportes, text="Grafico", width=10, height=2, font=("Trebuchet MS", 12), bg="orange")
+        self.boton_grafico = tk.Button(self.frame_reportes, text="Grafico", width=10, height=2, font=("Trebuchet MS", 12), bg="#DFB767")
+
+        self.boton_pdf = tk.Button(self.frame_reportes, text="Exportar PDF", width=12, height=2, font=("Trebuchet MS", 12), fg="white", bg="#412A23")
 
         cerrar_boton = tk.Button(self.frame_reportes, text="Cerrar", width=10, height=2, font=("Trebuchet MS", 12), bg="maroon", fg="white", command=self.root.quit)
-        cerrar_boton.place(x=1000, y=600)
+        cerrar_boton.place(x=1200, y=600)
 
     # Crea o limpia el área de visualización del reporte
     def mostrar_area_reporte(self):
@@ -815,27 +834,43 @@ class BibliotecaApp:
             tk.Label(self.frame_reporte, text="No hay préstamos vencidos.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
             return
 
-        titulo_label = tk.Label(self.frame_reporte, text="Reporte de Préstamos Vencidos", font=("Trebuchet MS", 16, "bold"),bg="#f0f0f0")
+        # Calcular días de vencimiento
+        prestamos_con_dias_vencidos = []
+        fecha_actual = datetime.now()
+        for prestamo in prestamos_vencidos:
+            fecha_vencimiento = datetime.strptime(prestamo[4], "%Y-%m-%d")  # Formato de la fecha de vencimiento
+            dias_vencidos = (fecha_actual - fecha_vencimiento).days
+            prestamos_con_dias_vencidos.append(prestamo + (dias_vencidos,))
+
+        # Ordenar por días de vencimiento de mayor a menor
+        prestamos_ordenados = sorted(prestamos_con_dias_vencidos, key=lambda x: x[-1], reverse=True)
+
+        # Crear tabla en la interfaz
+        titulo_label = tk.Label(self.frame_reporte, text="Reporte de Préstamos Vencidos", font=("Trebuchet MS", 16, "bold"), bg="#f0f0f0")
         titulo_label.place(x=350, y=10)
 
-        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("ID", "Usuario", "Libro", "Fecha Préstamo", "Fecha Vencimiento"), show="headings")
-        tabla_reporte.heading("ID", text="ID Préstamo")
-        tabla_reporte.heading("Usuario", text="Usuario")
-        tabla_reporte.heading("Libro", text="Libro")
-        tabla_reporte.heading("Fecha Préstamo", text="Fecha Préstamo")
-        tabla_reporte.heading("Fecha Vencimiento", text="Fecha Vencimiento")
+        columnas = ("ID", "Usuario", "Libro", "Fecha Préstamo", "Fecha Vencimiento", "Días Vencidos")
+        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=columnas, show="headings")
+        for col in columnas:
+            tabla_reporte.heading(col, text=col)
+            tabla_reporte.column(col, width=130, anchor="center")
 
-        for col in ("ID", "Usuario", "Libro", "Fecha Préstamo", "Fecha Vencimiento"):
-            tabla_reporte.column(col, width=150, anchor="center")
-
-        tabla_reporte.place(x=120, y=50, width=750, height=300)
+        tabla_reporte.place(x=100, y=50, width=780, height=300)
 
         scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
         tabla_reporte.configure(yscrollcommand=scroll_y.set)
-        scroll_y.place(x=870, y=50, height=300) 
+        scroll_y.place(x=880, y=50, height=300)
 
-        for prestamo in prestamos_vencidos:
-            tabla_reporte.insert("", tk.END, values=(prestamo[0], prestamo[1], prestamo[2], prestamo[3], prestamo[4]))
+        # Insertar datos en la tabla
+        for prestamo in prestamos_ordenados:
+            tabla_reporte.insert("", tk.END, values=prestamo)
+
+        # Crear PDF con la columna adicional
+        titulo_reporte = "Reporte de Préstamos Vencidos"
+        columnas_pdf = ("ID Préstamo", "Usuario", "Libro", "Fecha Préstamo", "Fecha Vencimiento", "Días Vencidos")
+ 
+        self.boton_pdf.config(command=lambda: self.generar_pdf(titulo_reporte=titulo_reporte, columnas=columnas_pdf,datos=prestamos_ordenados,ancho_columnas=90))
+        self.boton_pdf.place(x=800, y=600)
 
     # Genera y muestra el reporte de libros más prestados
     def generar_reporte_libros_mas_prestados(self):
@@ -864,6 +899,13 @@ class BibliotecaApp:
 
         self.boton_grafico .config(text="Grafico", command=lambda: self.alternar_reporte_libros_mas_prestados(libros_mas_prestados))
         self.boton_grafico.place(x=850, y=600)
+
+        # Título y columnas del reporte
+        titulo_reporte = "Reporte de Libros Más Prestados"
+        columnas = ("ID Libro", "Título", "Total Préstamos")
+
+        self.boton_pdf.config(command=lambda: self.generar_pdf(titulo_reporte=titulo_reporte, columnas=columnas, datos=libros_mas_prestados, ancho_columnas=[100, 120, 150, 120, 120, 100]))
+        self.boton_pdf.place(x=700, y=600)
 
     # Alternar entre la tabla y el gráfico
     def alternar_reporte_libros_mas_prestados(self, libros_mas_prestados):
@@ -924,6 +966,13 @@ class BibliotecaApp:
         self.boton_grafico.config(text="Grafico", command=lambda: self.alternar_reporte_usuarios_mas_prestamos(usuarios_mas_prestamos))
         self.boton_grafico.place(x=850, y=600)
 
+        # Título y columnas del reporte
+        titulo_reporte = "Reporte de Usuarios con Más Préstamos"
+        columnas = ("ID Usuario", "Nombre", "Apellido", "Total Préstamos")
+
+        self.boton_pdf.config(command=lambda: self.generar_pdf(titulo_reporte=titulo_reporte,columnas=columnas,datos=usuarios_mas_prestamos,ancho_columnas=100))
+        self.boton_pdf.place(x=700, y=600)
+
     # Alternar entre tabla y gráfico
     def alternar_reporte_usuarios_mas_prestamos(self, usuarios_mas_prestamos):
         if self.boton_grafico["text"] == "Grafico":
@@ -952,26 +1001,27 @@ class BibliotecaApp:
 
     # Genera y muestra el reporte de libros por autor
     def generar_reporte_libros_por_autor(self):
-
         self.mostrar_area_reporte()
         self.boton_grafico.place_forget()
 
-        libros_por_autor = Libro.obtener_libros_por_autor() 
+        libros_por_autor = Libro.obtener_libros_por_autor()
 
         if not libros_por_autor:
             tk.Label(self.frame_reporte, text="No hay libros disponibles.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
             return
 
-        titulo_label = tk.Label(self.frame_reporte, text="Reporte de Libros por Autor", font=("Trebuchet MS", 16, "bold"),bg="#f0f0f0")
+        titulo_label = tk.Label(self.frame_reporte, text="Reporte de Libros por Autor", font=("Trebuchet MS", 16, "bold"), bg="#f0f0f0")
         titulo_label.place(x=320, y=10)
 
-        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("Autor", "Cantidad Libros", "Total Disponibles"), show="headings")
+        # Actualizar columnas de la tabla
+        tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("Autor", "ISBN", "Libro", "Cantidad Disponible"), show="headings")
         tabla_reporte.heading("Autor", text="Autor")
-        tabla_reporte.heading("Cantidad Libros", text="Cantidad de Libros")
-        tabla_reporte.heading("Total Disponibles", text="Total Disponibles")
+        tabla_reporte.heading("ISBN", text="ISBN")
+        tabla_reporte.heading("Libro", text="Libro")
+        tabla_reporte.heading("Cantidad Disponible", text="Cantidad Disponible")
 
-        for col in ("Autor", "Cantidad Libros", "Total Disponibles"):
-            tabla_reporte.column(col, width=250, anchor="center")
+        for col in ("Autor", "ISBN", "Libro", "Cantidad Disponible"):
+            tabla_reporte.column(col, width=150, anchor="center")
 
         tabla_reporte.place(x=120, y=50, width=750, height=300)
 
@@ -979,12 +1029,21 @@ class BibliotecaApp:
         tabla_reporte.configure(yscrollcommand=scroll_y.set)
         scroll_y.place(x=870, y=50, height=300)
 
-        for autor in libros_por_autor:
-            tabla_reporte.insert("", tk.END, values=(autor[0], autor[1], autor[2]))
+        # Insertar datos en la tabla
+        for libro in libros_por_autor:
+            tabla_reporte.insert("", tk.END, values=(libro[0], libro[1], libro[2], libro[3]))
+
+        # Generar PDF
+        titulo_reporte = "Reporte de Libros por Autor"
+        columnas = ("Autor", "ISBN", "Libro", "Cantidad Disponible")
+
+        datos = libros_por_autor
+
+        self.boton_pdf.config(command=lambda: self.generar_pdf(titulo_reporte=titulo_reporte, columnas=columnas, datos=datos, ancho_columnas=[120, 150, 150, 100]))
+        self.boton_pdf.place(x=800, y=600)
 
     # Genera y muestra el reporte de usuarios con penalizaciones
     def generar_reporte_usuarios_penalizados(self):
-
         self.mostrar_area_reporte()
         self.boton_grafico.place_forget()
 
@@ -994,7 +1053,7 @@ class BibliotecaApp:
             tk.Label(self.frame_reporte, text="No hay usuarios con penalizaciones.", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=10, y=10)
             return
 
-        titulo_label = tk.Label(self.frame_reporte, text="Reporte de Usuarios con Penalizaciones", font=("Trebuchet MS", 16, "bold"),bg="#f0f0f0")
+        titulo_label = tk.Label(self.frame_reporte, text="Reporte de Usuarios con Penalizaciones", font=("Trebuchet MS", 16, "bold"), bg="#f0f0f0")
         titulo_label.place(x=300, y=10)
 
         tabla_reporte = ttk.Treeview(self.frame_reporte, columns=("Nombre", "Apellido", "Monto", "Motivo"), show="headings")
@@ -1012,10 +1071,20 @@ class BibliotecaApp:
 
         scroll_y = tk.Scrollbar(self.frame_reporte, orient="vertical", command=tabla_reporte.yview)
         tabla_reporte.configure(yscrollcommand=scroll_y.set)
-        scroll_y.place(x=870, y=50, height=300) 
+        scroll_y.place(x=870, y=50, height=300)
 
-        for penalizacion in penalizaciones:
+        penalizaciones_ordenadas = sorted(penalizaciones, key=lambda x: x[2], reverse=True)
+
+        datos = []
+        for penalizacion in penalizaciones_ordenadas:
             tabla_reporte.insert("", tk.END, values=(penalizacion[0], penalizacion[1], penalizacion[2], penalizacion[3]))
+            datos.append((penalizacion[0], penalizacion[1], penalizacion[2], penalizacion[3]))
+
+        titulo_reporte = "Reporte de Usuarios con Penalizaciones"
+        columnas = ("Nombre", "Apellido", "Monto", "Motivo")
+
+        self.boton_pdf.config(command=lambda: self.generar_pdf(titulo_reporte=titulo_reporte,columnas=columnas,datos=datos,ancho_columnas=[120, 120, 100, 150]))
+        self.boton_pdf.place(x=800, y=600)
 
     # Muestra la interfaz del reporte de donaciones
     def mostrar_reporte_donaciones(self):
@@ -1041,6 +1110,8 @@ class BibliotecaApp:
         self.boton_grafico.config(text="Grafico", command=self.alternar_reporte_donaciones)
         self.boton_grafico.place(x=850, y=600)
 
+        self.boton_pdf.place_forget()
+
     # Genera el reporte de donaciones y muestra la tabla
     def generar_reporte_donacion(self):
         fecha_desde = self.fecha_desde_entry.get_date().strftime("%Y-%m-%d")
@@ -1048,11 +1119,15 @@ class BibliotecaApp:
 
         self.donaciones = Donacion.obtener_donaciones_por_periodo(fecha_desde, fecha_hasta)
 
+        if fecha_desde > fecha_hasta:
+            messagebox.showerror("Error", "La fecha 'Desde' no puede ser mayor que la fecha 'Hasta'.")
+            return
+
         if not self.donaciones:
             messagebox.showinfo("Reporte de Donaciones", "No se encontraron donaciones en el periodo seleccionado.")
             return
 
-        columnas = ("ID", "Institución/Usuario", "ISBN", "Fecha", "Cantidad")
+        columnas = ("ID", "Donante", "Libro", "Fecha", "Cantidad")
         self.tabla_reporte_donaciones = ttk.Treeview(self.frame_reporte, columns=columnas, show="headings")
 
         for col in columnas:
@@ -1066,9 +1141,17 @@ class BibliotecaApp:
         self.scroll_y_donaciones.place(x=870, y=120, height=280)
 
         for donacion in self.donaciones:
-            self.tabla_reporte_donaciones.insert("", "end", values=(donacion[0], donacion[1] if donacion[1] else donacion[2], donacion[3], donacion[4], donacion[5]))
-        
+            self.tabla_reporte_donaciones.insert("", "end", values=(donacion[0], donacion[1], donacion[2], donacion[3], donacion[4]))
+
         self.tabla_donaciones = True
+
+        self.boton_pdf.config(command=lambda: self.generar_pdf(
+            titulo_reporte="Reporte de Donaciones",
+            columnas=columnas,
+            datos=self.donaciones,
+            ancho_columnas=[50, 120, 150, 100, 80]
+        ))
+        self.boton_pdf.place(x=700, y=600)
 
     # Alterna entre la vista de tabla y gráfico para el reporte de donaciones
     def alternar_reporte_donaciones(self):
@@ -1110,6 +1193,7 @@ class BibliotecaApp:
             self.canvas_donaciones = FigureCanvasTkAgg(fig, master=self.frame_reporte)
             self.canvas_donaciones.draw()
             self.canvas_donaciones.get_tk_widget().place(x=120, y=80, width=750, height=400)
+            self.boton_pdf.place_forget()
         else:
             if hasattr(self, "canvas_donaciones"):
                 self.canvas_donaciones.get_tk_widget().place_forget()
@@ -1122,6 +1206,7 @@ class BibliotecaApp:
             self.fecha_hasta_entry.place(x=500, y=60)
             self.boton_generar_don.place(x=650, y=55)
             self.boton_grafico.config(text="Grafico")
+            self.boton_pdf.place(x=700, y=600)
 
     # Permite solo entrada numérica
     def validar_numerico(self, texto):
@@ -1131,3 +1216,54 @@ class BibliotecaApp:
     def validar_isbn(self, isbn):
         pattern = r"^\d{3}-\d-\d{2}-\d{6}-\d$"
         return bool(re.match(pattern, isbn))
+    
+    # Función genérica para generar PDF
+    def generar_pdf(self, titulo_reporte, columnas, datos, ancho_columnas):
+        file_path = f"{titulo_reporte}.pdf"
+        pdf = SimpleDocTemplate(file_path, pagesize=letter, title=titulo_reporte)
+
+        estilos = getSampleStyleSheet()
+        estilo_titulo = estilos['Heading1']
+        estilo_titulo.alignment = 1
+
+        titulo = Paragraph(titulo_reporte, estilo_titulo)
+        espacio = Spacer(1, 20)
+
+        estilo_tabla = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.orange),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ])
+
+        columnas_wrapped = [Paragraph(col, estilos['BodyText']) for col in columnas]
+
+        datos_wrapped = []
+        for fila in datos:
+            datos_wrapped.append([Paragraph(str(valor), estilos['BodyText']) for valor in fila])
+
+        tabla = Table([columnas_wrapped] + datos_wrapped, colWidths=ancho_columnas)
+        tabla.setStyle(estilo_tabla)
+
+        elementos = [
+            titulo,
+            espacio,
+            tabla
+        ]
+
+        pdf.build(elementos)
+
+        try:
+            if platform.system() == "Windows":
+                os.startfile(file_path)
+            elif platform.system() == "Darwin":
+                subprocess.Popen(["open", file_path])
+            else:
+                subprocess.Popen(["xdg-open", file_path])
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo abrir el archivo PDF automáticamente: {e}")
