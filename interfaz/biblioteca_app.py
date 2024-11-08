@@ -7,14 +7,16 @@ import re
 import os
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+from interfaz.country_api import CountryAPI
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tkinter import messagebox
 from patrones.factory import AutorFactory, LibroFactory, UsuarioFactory, PrestamoFactory, ReservaFactory, DonacionFactory
-from models.Autor import Autor
-from models.Libro import Libro
-from models.Usuario import Usuario
-from models.Prestamo import Prestamo
+from models.autor import Autor
+from models.libro import Libro
+from models.usuario import Usuario
+from models.prestamo import Prestamo
 from models.donacion import Donacion
 from datetime import datetime
 
@@ -92,9 +94,21 @@ class BibliotecaApp:
         self.frame_inicial.pack_forget()  # Ocultar el frame inicial
         self.cerrar_boton.pack_forget()   # Ocultar el botón de cerrar
 
+    # Carga los paises de la API
+    def cargar_paises(self):
+        """Carga los países en el Combobox de nacionalidad."""
+        api = CountryAPI()
+        paises = api.obtener_paises()
+        if paises:
+            self.nacionalidad_combobox['values'] = paises
+        else:
+            messagebox.showerror("Error", "No se pudieron cargar los países.")
+
     # Muestra la interfaz de registro de autores 
     def mostrar_registro_autores(self):
         self.ocultar_inicio()  
+
+
 
         self.frame_registro_autores = tk.Frame(self.root, width=self.root.winfo_screenwidth(), height=self.root.winfo_screenheight(), bg="#f0f0f0")
         self.frame_registro_autores.pack(fill="both", expand=True)
@@ -117,8 +131,10 @@ class BibliotecaApp:
         self.apellido_entry.place(x=620, y=190)
 
         tk.Label(self.frame_registro_autores, text="Nacionalidad:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=500, y=230)
-        self.nacionalidad_entry = tk.Entry(self.frame_registro_autores, font=("Trebuchet MS", 12), width=25)
-        self.nacionalidad_entry.place(x=620, y=230)
+        self.nacionalidad_combobox = ttk.Combobox(self.frame_registro_autores, font=("Trebuchet MS", 12), width=25, state="readonly")
+        self.nacionalidad_combobox.place(x=620, y=230)
+
+        self.cargar_paises()
 
         volver_boton = tk.Button(self.frame_registro_autores, text="Volver", width=10, height=2, font=("Trebuchet MS", 12), bg="#E9F98B", command=self.volver_inicio)
         volver_boton.place(x=500, y=300)
@@ -133,7 +149,7 @@ class BibliotecaApp:
     def registrar_autor(self):
         nombre = self.nombre_entry.get()
         apellido = self.apellido_entry.get()
-        nacionalidad = self.nacionalidad_entry.get()
+        nacionalidad = self.nacionalidad_combobox.get()
     
         if not nombre or not apellido or not nacionalidad:
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
@@ -147,7 +163,7 @@ class BibliotecaApp:
             messagebox.showinfo("Registro", "Autor registrado correctamente.")
             self.nombre_entry.delete(0, tk.END)
             self.apellido_entry.delete(0, tk.END)
-            self.nacionalidad_entry.delete(0, tk.END)
+            self.nacionalidad_combobox.set('')
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo registrar el autor: {e}")
 
@@ -175,9 +191,6 @@ class BibliotecaApp:
         tk.Label(self.frame_registro_libros, text="Código ISBN:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=500, y=150)
         self.isbn_entry = tk.Entry(self.frame_registro_libros, font=("Trebuchet MS", 12), width=25)
         self.isbn_entry.place(x=620, y=150)
-        # Metodo para verificar que el ISBN existe y autocompletar los datos
-        self.isbn_entry.bind('<FocusOut>', self.verificar_isbn_existente)
-
 
         tk.Label(self.frame_registro_libros, text="Título:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=545, y=190)
         self.titulo_entry = tk.Entry(self.frame_registro_libros, font=("Trebuchet MS", 12), width=25)
@@ -227,12 +240,21 @@ class BibliotecaApp:
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
             return
 
+        if int(cantidad) > 100:
+            messagebox.showerror("Error", "La cantidad máxima permitida es de 100.")
+            return
+
+        # Validar que el año de publicación no sea mayor al año actual
+        anio_actual = datetime.now().year
+        if int(anio_publicacion) > anio_actual:
+            messagebox.showerror("Error de Validación", f"El año de publicación no puede ser mayor al año actual ({anio_actual}).")
+            return
+
         try:
             autor_id = int(autor_seleccionado.split(" - ")[0])
             
             libro_factory = LibroFactory()
-            print(autor_id)
-            libro = libro_factory.factory_method(codigo_isbn, titulo, genero, anio_publicacion, autor_id, cantidad)
+            libro = libro_factory.factory_method(codigo_isbn, titulo, genero, anio_publicacion, autor_id, int(cantidad))
             libro.guardar()
 
             messagebox.showinfo("Registro", "Libro registrado correctamente.")
@@ -244,6 +266,12 @@ class BibliotecaApp:
             self.cantidad_libros_entry.delete(0, tk.END)
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo registrar el libro: {e}")
+
+    # Valida que ele telofono ingresado tenga el formato correcto
+    def validar_telefono(self, telefono):
+        # Expresión regular para validar números de teléfono argentinos en el formato 9 11 1234 5678
+        patron = r'^9\s?\d{2,4}\s?\d{6,8}$'
+        return re.match(patron, telefono) is not None
 
     # Muestra la interfaz de registro de usuarios
     def mostrar_registro_usuarios(self):
@@ -300,6 +328,10 @@ class BibliotecaApp:
 
         if not nombre or not apellido or not tipo_usuario or not direccion or not telefono:
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
+            return
+        
+        if not self.validar_telefono(telefono):
+            messagebox.showerror("Error de Validación", "El número de teléfono no es válido. Debe seguir el formato argentino, por ejemplo, 9 11 1234 5678.")
             return
 
         usuario_factory = UsuarioFactory()
@@ -370,6 +402,12 @@ class BibliotecaApp:
             messagebox.showerror("Error", "Debe seleccionar un usuario y un libro.")
             return
 
+        # Validar que la fecha de devolución no sea menor a la fecha actual
+        fecha_actual = datetime.now().strftime("%Y-%m-%d")
+        if fecha_devolucion < fecha_actual:
+            messagebox.showerror("Error de Validación", "La fecha de devolución estimada no puede ser menor a la fecha actual.")
+            return
+
         usuario_id = int(usuario_seleccionado.split(" - ")[0])
         codigo_isbn = libro_seleccionado[1:18]
 
@@ -428,7 +466,6 @@ class BibliotecaApp:
 
     # Registra la devolución del libro en el sistema
     def devolver_prestamo(self):
-        """ (estado 'Finalizado')."""
         selected_item = self.tabla_prestamos.selection()
         if not selected_item:
             messagebox.showerror("Error", "Debe seleccionar un préstamo para devolver.")
@@ -438,11 +475,17 @@ class BibliotecaApp:
         prestamo_id = self.tabla_prestamos.item(selected_item)["values"][0]
 
         try:
-            Prestamo.finalizar_prestamo(prestamo_id)  # Finalizar el préstamo
+            libro_devuelto, usuarios_notificados = Prestamo.finalizar_prestamo(prestamo_id)
             messagebox.showinfo("Devolución", "Préstamo devuelto correctamente.")
+
+            # Si hay usuarios notificados, mostrar la alerta
+            if usuarios_notificados:
+                usuarios_nombres = ", ".join(f"Usuario {id}" for id in usuarios_notificados)
+                messagebox.showinfo("Notificación de Reserva", f'Se le notificó la disponibilidad del libro "{libro_devuelto}" a los usuarios: {usuarios_nombres}')
 
             # Actualizar la tabla eliminando el préstamo devuelto
             self.tabla_prestamos.delete(selected_item)
+        
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo registrar la devolución: {e}")
 
@@ -573,23 +616,9 @@ class BibliotecaApp:
         titulo_label.place(x=600, y=50)
 
         tk.Label(self.frame_baja_libros, text="Libro:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=565, y=150)
-        # Modified: Only get books with available copies
-        libros = [libro for libro in Libro.listar_libros() if Libro.consultar_disponibilidad(libro[0]) > 0]
-        if not libros:
-            mensaje_label = tk.Label(self.frame_baja_libros, 
-                                text="No hay libros disponibles para dar de baja", 
-                                font=("Trebuchet MS", 12, "italic"), 
-                                bg="#f0f0f0")
-            mensaje_label.place(x=650, y=150)
-        else:
-            self.libro_combobox = ttk.Combobox(
-                self.frame_baja_libros,
-                values=[f"({libro[0]}) - {libro[1]}" for libro in libros],
-                font=("Trebuchet MS", 12),
-                width=35,
-                state="readonly"
-            )
-            self.libro_combobox.place(x=650, y=150)
+        libros = Libro.listar_libros()
+        self.libro_combobox = ttk.Combobox(self.frame_baja_libros,values=[f"({libro[0]}) - {libro[1]}" for libro in libros],font=("Trebuchet MS", 12),width=35,state="readonly")
+        self.libro_combobox.place(x=650, y=150)
 
         tk.Label(self.frame_baja_libros, text="Usuario:", font=("Trebuchet MS", 12), bg="#f0f0f0").place(x=550, y=190)
         usuarios = Usuario.listar_usuarios()
@@ -712,6 +741,10 @@ class BibliotecaApp:
 
         if not tipo_donacion or not libro or not cantidad or (not usuario and not nombre_institucion):
             messagebox.showerror("Error", "Todos los campos son obligatorios.")
+            return
+        
+        if int(cantidad) > 500:
+            messagebox.showerror("Error", "La cantidad máxima permitida es de 500.")
             return
 
         usuario_id = int(usuario.split(" - ")[0]) if usuario else None
@@ -1103,28 +1136,3 @@ class BibliotecaApp:
     def validar_isbn(self, isbn):
         pattern = r"^\d{3}-\d-\d{2}-\d{6}-\d$"
         return bool(re.match(pattern, isbn))
-    
-    def verificar_isbn_existente(self, event):
-        isbn = self.isbn_entry.get()
-        
-        if Libro.existe_libro_con_isbn(isbn):
-            libro = Libro.obtener_libro_por_isbn(isbn)
-            if libro:
-                self.titulo_entry.delete(0, tk.END)
-                self.titulo_entry.insert(0, libro.titulo)
-                
-                self.genero_entry.delete(0, tk.END)
-                self.genero_entry.insert(0, libro.genero)
-                
-                self.anio_publicacion_entry.delete(0, tk.END)
-                self.anio_publicacion_entry.insert(0, libro.anio_publicacion)
-                
-                # Find and select the correct author in combobox
-                autores = Autor.listar_autores()
-                for i, autor in enumerate(autores):
-                    if autor[0] == libro.autor_id:
-                        self.autor_combobox.current(i)
-                        break
-                
-                messagebox.showinfo("ISBN Existente", 
-                                "Este libro ya existe en la base de datos. Los campos han sido autocompletados.")
