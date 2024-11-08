@@ -475,13 +475,8 @@ class BibliotecaApp:
         prestamo_id = self.tabla_prestamos.item(selected_item)["values"][0]
 
         try:
-            libro_devuelto, usuarios_notificados = Prestamo.finalizar_prestamo(prestamo_id)
+            Prestamo.finalizar_prestamo(prestamo_id)
             messagebox.showinfo("Devolución", "Préstamo devuelto correctamente.")
-
-            # Si hay usuarios notificados, mostrar la alerta
-            if usuarios_notificados:
-                usuarios_nombres = ", ".join(f"Usuario {id}" for id in usuarios_notificados)
-                messagebox.showinfo("Notificación de Reserva", f'Se le notificó la disponibilidad del libro "{libro_devuelto}" a los usuarios: {usuarios_nombres}')
 
             # Actualizar la tabla eliminando el préstamo devuelto
             self.tabla_prestamos.delete(selected_item)

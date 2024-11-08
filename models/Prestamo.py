@@ -5,8 +5,8 @@ from models.penalizacion import Penalizacion
 # Añadir el directorio raíz del proyecto a sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db_management.db_manager import DatabaseManager
-from models.Usuario import Usuario
-from models.Libro import Libro
+from models.usuario import Usuario
+from models.libro import Libro
 from datetime import datetime, timedelta
 import sqlite3
 
