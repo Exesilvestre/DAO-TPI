@@ -41,6 +41,4 @@ La interfaz de la aplicación permite a los usuarios gestionar las funcionalidad
 - **Matplotlib**: Para gráficos y visualización de datos.
 - **tkcalendar**: Para la selección de fechas en la interfaz.
 
-## Autor
 
-Trabajo realizado como parte del curso de Desarrollo de Aplicaciones con Objetos.
