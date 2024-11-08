@@ -25,7 +25,6 @@ Sigue estos pasos para instalar y ejecutar el proyecto en tu entorno local.
    ```bash
    pip install -r requirements.txt
    ```
-
 3. Ejecuta la aplicación:
     ```bash
    python main.py
