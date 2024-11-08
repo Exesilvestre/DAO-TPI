@@ -71,6 +71,7 @@ class DatabaseManager:
                 )
             ''')
             print("Tabla préstamos creada o ya existente.")
+            self.agregar_registros_prestamos()
 
             # Crear tabla de reservas
             self.conn.execute('''
@@ -198,6 +199,21 @@ class DatabaseManager:
             print("Registros de usuarios agregados.")
         else:
             print("La tabla de usuarios ya tiene registros.")
+
+    def agregar_registros_prestamos(self):
+        if not self._tabla_tiene_datos('prestamos'):
+            prestamos = [
+                (2, "978-1-2345-6780-1", "2024-11-01", "2024-11-05", 'Activo'),
+                (2, "978-1-2345-6780-2", "2024-11-01", "2024-11-05", 'Activo')
+            ]
+            with self.conn:
+                self.conn.executemany('''
+                    INSERT INTO prestamos (usuario_id, libro_isbn, fecha_prestamo, fecha_devolucion, estado)
+                    VALUES (?, ?, ?, ?, ?);
+                ''', prestamos)
+            print("Registros de préstamos agregados.")
+        else:
+            print("La tabla de préstamos ya tiene registros.")
 
     def cerrar_conexion(self):
         if self.conn:
