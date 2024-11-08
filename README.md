@@ -20,7 +20,7 @@ Sigue estos pasos para instalar y ejecutar el proyecto en tu entorno local.
    git clone https://github.com/Exesilvestre/DAO-TPI.git
    cd tu_repositorio
    ```
-2.Instala las dependencias necesarias usando requirements.txt:
+2. Instala las dependencias necesarias usando requirements.txt:
    ```bash
    pip install -r requirements.txt
    ```
