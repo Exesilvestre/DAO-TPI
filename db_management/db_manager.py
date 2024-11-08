@@ -133,16 +133,16 @@ class DatabaseManager:
     def agregar_registros_autores(self):
         if not self._tabla_tiene_datos('autores'):
             autores = [
-                ("Gabriel", "García Márquez", "Colombiana"),
+                ("Gabriel", "García Márquez", "Colombia"),
                 ("Julio", "Cortázar", "Argentina"),
-                ("Isabel", "Allende", "Chilena"),
-                ("Mario", "Vargas Llosa", "Peruana"),
+                ("Isabel", "Allende", "Chile"),
+                ("Mario", "Vargas Llosa", "Peru"),
                 ("Jorge", "Luis Borges", "Argentina"),
-                ("Pablo", "Neruda", "Chilena"),
-                ("Octavio", "Paz", "Mexicana"),
-                ("Laura", "Esquivel", "Mexicana"),
-                ("Carlos", "Fuentes", "Mexicana"),
-                ("Miguel", "de Cervantes", "Española")
+                ("Pablo", "Neruda", "Chile"),
+                ("Octavio", "Paz", "Mexico"),
+                ("Laura", "Esquivel", "Mexico"),
+                ("Carlos", "Fuentes", "Mexico"),
+                ("Miguel", "de Cervantes", "España")
             ]
             with self.conn:
                 self.conn.executemany('''

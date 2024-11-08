@@ -49,10 +49,10 @@ class Autor:
         except sqlite3.Error as e:
             print(f"Error al verificar la existencia del autor: {e}")
             return False
-        
+    
+    # Devuelve una lista de tuplas con (id, 'nombre apellido') de todos los autores en la base de datos
     @classmethod
     def listar_autores(cls):
-        """Devuelve una lista de tuplas con (id, 'nombre apellido') de todos los autores en la base de datos."""
         db_manager = DatabaseManager()
         with db_manager.conn:
             cursor = db_manager.conn.execute("SELECT id, nombre, apellido FROM autores")
